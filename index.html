@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎹 音乐粒子钢琴 | 杨岚的趣味项目</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Segoe UI', cursive, sans-serif;
+            background: linear-gradient(135deg, #ffd6e7, #c1f0ff);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 8px solid white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 飘浮的气球装饰 */
+        .balloon {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+        .balloon:nth-child(1) {
+            background: #ff6b9d;
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+        .balloon:nth-child(2) {
+            background: #4ecdc4;
+            top: 20%;
+            right: 8%;
+            animation-delay: 1s;
+        }
+        .balloon:nth-child(3) {
+            background: #ffd166;
+            bottom: 15%;
+            left: 10%;
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        h1 {
+            color: #ff6b9d;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0 #ffd166;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #4a6fa5;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        /* 控制面板 */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 0 #3aa89f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 0 #3aa89f;
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 0 #3aa79f;
+        }
+
+        .control-btn.record {
+            background: #ff6b9d;
+            box-shadow: 0 5px 0 #d85785;
+        }
+
+        .control-btn.play {
+            background: #ffd166;
+            box-shadow: 0 5px 0 #d9b456;
+        }
+
+        .control-btn.clear {
+            background: #6a5acd;
+            box-shadow: 0 5px 0 #5a4abc;
+        }
+
+        /* 钢琴键盘 */
+        .piano-container {
+            background: #2d3047;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px auto 40px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .piano {
+            display: flex;
+            justify-content: center;
+            height: 200px;
+            position: relative;
+        }
+
+        .white-key {
+            width: 60px;
+            height: 180px;
+            background: white;
+            border: 3px solid #ccc;
+            border-radius: 0 0 10px 10px;
+            margin: 0 2px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s ease;
+            box-shadow: 0 5px 0 #ddd;
+        }
+
+        .white-key:hover {
+            background: #f8f8f8;
+        }
+
+        .white-key.active {
+            background: linear-gradient(to bottom, #fff, #e6e6e6);
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #ddd;
+        }
+
+        .black-key {
+            width: 40px;
+            height: 120px;
+            background: linear-gradient(to bottom, #333, #000);
+            border-radius: 0 0 8px 8px;
+            position: absolute;
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.1s ease;
+            box-shadow: 0 3px 0 #222;
+        }
+
+        .black-key:hover {
+            background: linear-gradient(to bottom, #444, #111);
+        }
+
+        .black-key.active {
+            background: linear-gradient(to bottom, #222, #000);
+            transform: translateY(3px);
+            box-shadow: 0 0 0 #222;
+        }
+
+        /* 键位位置 */
+        .black-key:nth-child(2) { left: 45px; }  /* C# */
+        .black-key:nth-child(3) { left: 107px; } /* D# */
+        .black-key:nth-child(4) { left: 231px; } /* F# */
+        .black-key:nth-child(5) { left: 293px; } /* G# */
+        .black-key:nth-child(6) { left: 355px; } /* A# */
+
+        /* 粒子画布 */
+        .particle-canvas {
+            width: 100%;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            margin-top: 20px;
+            border: 4px dashed #4ecdc4;
+            overflow: hidden;
+        }
+
+        /* 录音显示 */
+        .recording-display {
+            min-height: 60px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 2px solid #ffd166;
+            font-family: monospace;
+            text-align: left;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .note-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 0 5px;
+            background: #4ecdc4;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
+            animation: pop 0.3s ease;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 说明区域 */
+        .instructions {
+            background: #e8f4f8;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+            text-align: left;
+            border-left: 5px solid #4ecdc4;
+        }
+
+        .instructions h3 {
+            color: #4a6fa5;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .instructions li {
+            padding: 5px 0;
+            color: #666;
+            display: flex;
+            align-items: center;
+        }
+
+        .instructions li:before {
+            content: "🎵";
+            margin-right: 10px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .white-key {
+                width: 40px;
+            }
+            
+            .black-key {
+                width: 28px;
+                height: 100px;
+            }
+            
+            .control-btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 飘浮气球装饰 -->
+    <div class="balloon"></div>
+    <div class="balloon"></div>
+    <div class="balloon"></div>
+    
+    <div class="container">
+        <h1>🎹 音乐粒子钢琴</h1>
+        <p class="subtitle">点击琴键演奏音乐，观看彩色粒子飞舞！</p>
+        
+        <!-- 控制面板 -->
+        <div class="controls">
+            <button class="control-btn record" onclick="toggleRecording()">
+                <span id="recordIcon">⏺️</span>
+                <span id="recordText">开始录音</span>
+            </button>
+            <button class="control-btn play" onclick="playRecording()">
+                ▶️ 播放录音
+            </button>
+            <button class="control-btn clear" onclick="clearRecording()">
+                🗑️ 清除录音
+            </button>
+            <button class="control-btn" onclick="clearParticles()">
+                ✨ 清除粒子
+            </button>
+        </div>
+        
+        <!-- 录音显示 -->
+        <div class="recording-display" id="recordingDisplay">
+            <span style="color: #666;">录音将在这里显示...</span>
+        </div>
+        
+        <!-- 钢琴键盘 -->
+        <div class="piano-container">
+            <div class="piano" id="piano">
+                <!-- 白键 -->
+                <div class="white-key" data-note="C4"></div>
+                <div class="white-key" data-note="D4"></div>
+                <div class="white-key" data-note="E4"></div>
+                <div class="white-key" data-note="F4"></div>
+                <div class="white-key" data-note="G4"></div>
+                <div class="white-key" data-note="A4"></div>
+                <div class="white-key" data-note="B4"></div>
+                <div class="white-key" data-note="C5"></div>
+                
+                <!-- 黑键 -->
+                <div class="black-key" data-note="C#4"></div>
+                <div class="black-key" data-note="D#4"></div>
+                <div class="black-key" data-note="F#4"></div>
+                <div class="black-key" data-note="G#4"></div>
+                <div class="black-key" data-note="A#4"></div>
+            </div>
+        </div>
+        
+        <!-- 粒子画布 -->
+        <canvas class="particle-canvas" id="particleCanvas"></canvas>
+        
+        <!-- 说明区域 -->
+        <div class="instructions">
+            <h3>🎮 如何使用：</h3>
+            <ul>
+                <li><strong>点击琴键</strong> - 发出声音并产生彩色粒子</li>
+                <li><strong>开始录音</strong> - 录制你的演奏，然后可以回放</li>
+                <li><strong>键盘控制</strong> - 也可以用键盘 A S D F G H J K 键演奏</li>
+                <li><strong>粒子效果</strong> - 不同音符产生不同颜色的粒子</li>
+                <li><strong>分享乐趣</strong> - 创作一段旋律分享给朋友！</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // ===== 音频上下文和振荡器 =====
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let isRecording = false;
+        let recordedNotes = [];
+        let recordingStartTime = 0;
+        
+        // 音符频率映射
+        const noteFrequencies = {
+            'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13,
+            'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
+            'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+            'C5': 523.25
+        };
+        
+        // 键盘映射
+        const keyMap = {
+            'a': 'C4', 'w': 'C#4', 's': 'D4', 'e': 'D#4',
+            'd': 'E4', 'f': 'F4', 't': 'F#4', 'g': 'G4',
+            'y': 'G#4', 'h': 'A4', 'u': 'A#4', 'j': 'B4',
+            'k': 'C5'
+        };
+        
+        // ===== 粒子系统 =====
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        let particles = [];
+        
+        // 音符对应的颜色
+        const noteColors = {
+            'C': '#ff6b9d', 'C#': '#ff8e6b', 'D': '#ffd166', 'D#': '#c5e86c',
+            'E': '#4ecdc4', 'F': '#1dd3b0', 'F#': '#2a9d8f', 'G': '#3d5a80',
+            'G#': '#5a189a', 'A': '#9d4edd', 'A#': '#c77dff', 'B': '#ff006e'
+        };
+        
+        class Particle {
+            constructor(x, y, note) {
+                this.x = x;
+                this.y = y;
+                this.note = note;
+                this.color = noteColors[note.replace(/\d/, '')] || '#4ecdc4';
+                this.size = Math.random() * 15 + 5;
+                this.speedX = Math.random() * 6 - 3;
+                this.speedY = Math.random() * 6 - 3;
+                this.life = 1.0;
+                this.decay = 0.02;
+            }
+            
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.speedY += 0.1; // 重力效果
+                this.life -= this.decay;
+                this.size *= 0.995;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 添加光晕
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life * 0.3;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            requestAnimationFrame(animateParticles);
+        }
+        
+        // 创建粒子
+        function createParticles(x, y, note) {
+            const particleCount = 15;
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle(x, y, note));
+            }
+        }
+        
+        // ===== 钢琴功能 =====
+        function playNote(note, duration = 0.5) {
+            const frequency = noteFrequencies[note];
+            if (!frequency) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // 设置音色
+            oscillator.type = 'sine';
+            oscillator.frequency.value = frequency;
+            
+            // 音量包络
+            const now = audioContext.currentTime;
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            
+            oscillator.start(now);
+            oscillator.stop(now + duration);
+            
+            // 如果是录音状态，记录这个音符
+            if (isRecording) {
+                const time = Date.now() - recordingStartTime;
+                recordedNotes.push({ note, time });
+                updateRecordingDisplay();
+            }
+            
+            // 创建粒子
+            const pianoRect = document.querySelector('.piano-container').getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            createParticles(x, y, note);
+            
+            return oscillator;
+        }
+        
+        // ===== 录音功能 =====
+        function toggleRecording() {
+            isRecording = !isRecording;
+            const recordBtn = document.querySelector('.control-btn.record');
+            const recordIcon = document.getElementById('recordIcon');
+            const recordText = document.getElementById('recordText');
+            
+            if (isRecording) {
+                recordedNotes = [];
+                recordingStartTime = Date.now();
+                recordIcon.textContent = '⏹️';
+                recordText.textContent = '停止录音';
+                recordBtn.style.background = '#ff4757';
+                recordBtn.style.boxShadow = '0 5px 0 #d43f3f';
+                
+                document.getElementById('recordingDisplay').innerHTML = 
+                    '<span style="color: #ff4757; font-weight: bold;">● 录音中...</span>';
+            } else {
+                recordIcon.textContent = '⏺️';
+                recordText.textContent = '开始录音';
+                recordBtn.style.background = '#ff6b9d';
+                recordBtn.style.boxShadow = '0 5px 0 #d85785';
+                updateRecordingDisplay();
+            }
+        }
+        
+        function playRecording() {
+            if (recordedNotes.length === 0) {
+                alert('还没有录音！先演奏一些音符吧~');
+                return;
+            }
+            
+            const display = document.getElementById('recordingDisplay');
+            display.innerHTML = '<span style="color: #4ecdc4; font-weight: bold;">▶️ 播放录音中...</span>';
+            
+            recordedNotes.forEach((noteData, index) => {
+                setTimeout(() => {
+                    playNote(noteData.note, 0.5);
+                    // 高亮显示当前播放的音符
+                    const noteSpan = document.querySelectorAll('.note-indicator')[index];
+                    if (noteSpan) {
+                        noteSpan.style.background = '#ff6b9d';
+                        setTimeout(() => {
+                            noteSpan.style.background = '#4ecdc4';
+                        }, 300);
+                    }
+                }, noteData.time);
+            });
+            
+            setTimeout(() => {
+                display.innerHTML = getRecordingDisplayHTML();
+            }, recordedNotes[recordedNotes.length - 1].time + 600);
+        }
+        
+        function clearRecording() {
+            recordedNotes = [];
+            document.getElementById('recordingDisplay').innerHTML = 
+                '<span style="color: #666;">录音已清除</span>';
+        }
+        
+        function clearParticles() {
+            particles = [];
+        }
+        
+        function updateRecordingDisplay() {
+            document.getElementById('recordingDisplay').innerHTML = getRecordingDisplayHTML();
+        }
+        
+        function getRecordingDisplayHTML() {
+            if (recordedNotes.length === 0) {
+                return '<span style="color: #666;">还没有录音，点击琴键开始吧！</span>';
+            }
+            
+            return recordedNotes.map((noteData, index) => 
+                `<span class="note-indicator" style="animation-delay: ${index * 0.1}s">${noteData.note}</span>`
+            ).join('');
+        }
+        
+        // ===== 事件监听 =====
+        function setupPiano() {
+            const keys = document.querySelectorAll('.white-key, .black-key');
+            
+            keys.forEach(key => {
+                // 鼠标点击
+                key.addEventListener('mousedown', () => {
+                    const note = key.dataset.note;
+                    playNote(note);
+                    key.classList.add('active');
+                });
+                
+                key.addEventListener('mouseup', () => {
+                    key.classList.remove('active');
+                });
+                
+                key.addEventListener('mouseleave', () => {
+                    key.classList.remove('active');
+                });
+                
+                // 触摸屏支持
+                key.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const note = key.dataset.note;
+                    playNote(note);
+                    key.classList.add('active');
+                });
+                
+                key.addEventListener('touchend', () => {
+                    key.classList.remove('active');
+                });
+            });
+            
+            // 键盘控制
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (keyMap[key] && !e.repeat) {
+                    const note = keyMap[key];
+                    playNote(note);
+                    
+                    // 视觉反馈
+                    const visualKey = document.querySelector(`[data-note="${note}"]`);
+                    if (visualKey) {
+                        visualKey.classList.add('active');
+                    }
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (keyMap[key]) {
+                    const note = keyMap[key];
+                    const visualKey = document.querySelector(`[data-note="${note}"]`);
+                    if (visualKey) {
+                        visualKey.classList.remove('active');
+                    }
+                }
+            });
+            
+            // 窗口大小调整
+            window.addEventListener('resize', () => {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            });
+        }
+        
+        // ===== 初始化 =====
+        document.addEventListener('DOMContentLoaded', () => {
+            setupPiano();
+            animateParticles();
+            
+            // 欢迎信息
+            setTimeout(() => {
+                document.getElementById('recordingDisplay').innerHTML = 
+                    '<span style="color: #4ecdc4;">欢迎！点击琴键开始演奏，试试录制你的旋律吧~</span>';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
