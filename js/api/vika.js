@@ -75,7 +75,6 @@ const VikaAPI = (function () {
    */
   function _matchCategory(record, category) {
     if (!category) return true;
-    // laws.json 使用 法条分类
     if (record['法条分类']) {
       var lawCat = record['法条分类'];
       if (category === '刑法') return lawCat === '刑法';
@@ -83,7 +82,6 @@ const VikaAPI = (function () {
       if (category === '行政法') return lawCat === '行政法';
       return true;
     }
-    // cases.json 使用 案件类型
     if (record['案件类型']) {
       var caseType = record['案件类型'];
       if (category === '刑法') return caseType === '刑事';
@@ -91,7 +89,6 @@ const VikaAPI = (function () {
       if (category === '行政法') return caseType === '行政';
       return true;
     }
-    // interpretations.json 使用 适用案由
     if (record['适用案由']) {
       var scenario = record['适用案由'];
       if (category === '刑法') return scenario.indexOf('刑事') !== -1 || scenario.indexOf('刑法') !== -1;
@@ -114,6 +111,21 @@ const VikaAPI = (function () {
     });
   }
 
+  // ---------- 关键词匹配兜底合并 ----------
+  // 当关键词匹配结果不足 MIN_MATCH_THRESHOLD 条时，合并大类兜底结果
+  var MIN_MATCH_THRESHOLD = 3;
+
+  function _mergeWithCategoryFallback(keywordFiltered, allData, category, keyFn) {
+    if (keywordFiltered.length >= MIN_MATCH_THRESHOLD) return keywordFiltered;
+    var catFiltered = allData.filter(function(r) { return _matchCategory(r, category); });
+    var seen = new Set(keywordFiltered.map(function(r) { return keyFn(r); }));
+    catFiltered.forEach(function(r) {
+      var k = keyFn(r);
+      if (k && !seen.has(k)) { keywordFiltered.push(r); seen.add(k); }
+    });
+    return keywordFiltered;
+  }
+
   // ---------- 三张表独立接口 ----------
 
   /**
@@ -128,6 +140,8 @@ const VikaAPI = (function () {
       var filtered;
       if (keywords && keywords.length > 0) {
         filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
+        var lawKeyFn = function(r) { return r['法条序号'] || r['法条原文'] || ''; };
+        filtered = _mergeWithCategoryFallback(filtered, data, category, lawKeyFn);
         filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
@@ -166,6 +180,8 @@ const VikaAPI = (function () {
       var filtered;
       if (keywords && keywords.length > 0) {
         filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
+        var explainKeyFn = function(r) { return r['解释全称'] || r['原文条款'] || ''; };
+        filtered = _mergeWithCategoryFallback(filtered, data, category, explainKeyFn);
         filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
@@ -204,6 +220,8 @@ const VikaAPI = (function () {
       var filtered;
       if (keywords && keywords.length > 0) {
         filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
+        var caseKeyFn = function(r) { return r['案情摘要'] || r['裁判要点'] || ''; };
+        filtered = _mergeWithCategoryFallback(filtered, data, category, caseKeyFn);
         filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });

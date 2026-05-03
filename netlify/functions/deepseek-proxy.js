@@ -3,6 +3,8 @@
 // 读取 Netlify 环境变量 DEEPSEEK_API_KEY，转发请求到 DeepSeek
 // ============================================================
 
+const fetch = require('node-fetch');
+
 exports.handler = async function (event, context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -25,6 +27,14 @@ exports.handler = async function (event, context) {
 
   const apiKey = process.env.DEEPSEEK_API_KEY || '';
 
+  if (!apiKey) {
+    return {
+      statusCode: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Server misconfiguration: DEEPSEEK_API_KEY not set in Netlify environment variables' })
+    };
+  }
+
   try {
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
@@ -33,7 +43,8 @@ exports.handler = async function (event, context) {
         'Authorization': 'Bearer ' + apiKey,
         'Accept': 'application/json'
       },
-      body: event.body
+      body: event.body,
+      timeout: 55000
     });
 
     const body = await response.text();

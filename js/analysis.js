@@ -593,7 +593,7 @@
   // ---------- VIP解锁后即时刷新 ----------
 
   function refreshResultsForVIP() {
-    if (cachedLawData && cachedLawData.length > 0) {
+    if (cachedLawData && Array.isArray(cachedLawData) && cachedLawData.length > 0) {
       renderLawData(cachedLawData, true);
     }
     if (cachedExplainData && cachedExplainData.length > 0) {
