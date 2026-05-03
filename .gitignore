@@ -1,0 +1,27 @@
+# 敏感密钥文件
+env.js
+
+# 依赖目录（本项目无依赖，仅作占位）
+node_modules/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Netlify 构建目录
+.netlify/
+
+# 日志文件
+*.log
+
+# 临时文件
+tmp/
+temp/

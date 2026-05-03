@@ -1,0 +1,355 @@
+/* ============================================================
+   法简AI - 组件样式
+   弹窗 / Toast / Loading / 骨架屏 / 空状态 / Tab
+   ============================================================ */
+
+/* ---------- Modal 弹窗 ---------- */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 26, 48, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalFadeIn 0.25s ease;
+  padding: var(--space-lg);
+}
+
+.modal-mask.modal-closing {
+  animation: modalFadeOut 0.22s ease forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modalFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.modal-dialog {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  max-width: 480px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  padding: var(--space-xl) var(--space-xl) 0;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.modal-body {
+  padding: var(--space-xl);
+}
+
+.modal-footer {
+  padding: 0 var(--space-xl) var(--space-xl);
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+}
+
+/* VIP 解锁弹窗特别样式 */
+.modal-vip .modal-dialog {
+  border: 1px solid var(--gray-200);
+}
+
+.modal-vip .modal-header {
+  text-align: center;
+}
+
+.modal-vip .modal-title {
+  font-size: 1.35rem;
+}
+
+.vip-input-row {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.vip-input-row .form-input {
+  flex: 1;
+}
+
+.vip-status-msg {
+  font-size: 0.82rem;
+  margin-top: var(--space-sm);
+  min-height: 20px;
+}
+
+.vip-status-msg.error { color: var(--error); }
+.vip-status-msg.success { color: var(--success); }
+
+/* ---------- Toast 轻提示 ---------- */
+.global-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 2000;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.global-toast.toast-show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(4px);
+}
+
+.toast-info {
+  background: var(--gray-800);
+  color: var(--white);
+}
+
+.toast-success {
+  background: var(--success);
+  color: var(--white);
+}
+
+.toast-error {
+  background: var(--error);
+  color: var(--white);
+}
+
+.toast-warning {
+  background: var(--warning);
+  color: var(--white);
+}
+
+/* ---------- Loading ---------- */
+.loading-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3xl) var(--space-xl);
+  gap: var(--space-lg);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--gray-500);
+  font-size: 0.88rem;
+}
+
+/* ---------- 骨架屏 ---------- */
+.skeleton-wrapper {
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ---------- 空状态 ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-xl);
+  color: var(--gray-400);
+  text-align: center;
+}
+
+.empty-text {
+  font-size: 0.9rem;
+  color: var(--gray-400);
+}
+
+/* ---------- 错误状态 ---------- */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-xl);
+  text-align: center;
+}
+
+.error-text {
+  font-size: 0.88rem;
+  color: var(--error);
+}
+
+/* ---------- Tab 切换 ---------- */
+.tab-nav {
+  display: flex;
+  border-bottom: 2px solid var(--gray-200);
+  gap: 0;
+  margin-bottom: var(--space-xl);
+}
+
+.tab-btn {
+  padding: 12px 28px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all var(--transition);
+}
+
+.tab-btn:hover {
+  color: var(--gray-700);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+  animation: fadeSlideIn 0.25s ease;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 离线提示 ---------- */
+.offline-banner {
+  background: var(--warning);
+  color: var(--white);
+  text-align: center;
+  padding: 10px var(--space-lg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: none;
+}
+
+.offline-banner.show {
+  display: block;
+}
+
+/* ---------- 结果分区卡片 ---------- */
+.result-section {
+  margin-bottom: var(--space-xl);
+}
+
+.result-section .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.section-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-ai      { background: var(--accent-light); color: var(--accent); }
+.badge-law     { background: #f0f4e8; color: #5a7a2d; }
+.badge-explain { background: #fef0e8; color: #a0602d; }
+.badge-case    { background: #f0e8f4; color: #6a3d82; }
+
+/* ---------- 复制按钮 ---------- */
+.copy-btn {
+  font-size: 0.78rem;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--gray-300);
+  background: var(--white);
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.copy-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.copy-btn.copied {
+  border-color: var(--success);
+  color: var(--success);
+  background: #f0faf4;
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 768px) {
+  .modal-dialog {
+    max-width: 100%;
+    margin: 0 var(--space-md);
+    max-height: 90vh;
+  }
+
+  .tab-btn {
+    padding: 10px 18px;
+    font-size: 0.82rem;
+  }
+
+  .vip-input-row {
+    flex-direction: column;
+  }
+}

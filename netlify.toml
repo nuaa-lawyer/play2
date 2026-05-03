@@ -1,0 +1,30 @@
+# ============================================================
+# 法简AI - Netlify 部署配置
+# 配置 API 代理规则，解决浏览器 CORS 跨域问题
+# ============================================================
+
+[build]
+  publish = "/"
+
+# DeepSeek API 代理
+[[redirects]]
+  from = "/api/deepseek/*"
+  to = "https://api.deepseek.com/:splat"
+  status = 200
+  force = true
+  headers = { X-Forwarded-Host = "api.deepseek.com" }
+
+# SPA 路由回退（确保刷新页面正常）
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 安全头
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"

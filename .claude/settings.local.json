@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import docx; print\\('python-docx OK'\\)\")",
+      "Bash(python3 -c \"import PyPDF2; print\\('PyPDF2 OK'\\)\")",
+      "Bash(python3 -c \"import pdfplumber; print\\('pdfplumber OK'\\)\")",
+      "Bash(python3 -c \"import ebooklib; print\\('ebooklib OK'\\)\")",
+      "Bash(python -c \"import docx; print\\('python-docx OK'\\)\")",
+      "Read(//c/Users/welcome/AppData/Local/Programs/**)",
+      "Bash(npm --version)",
+      "Bash(npm list *)",
+      "Bash(node scripts/parse-laws.js)",
+      "Bash(xxd)",
+      "Bash(npm install *)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const d=require\\('./laws.json'\\); const laws=new Set\\(d.map\\(a=>a.chapter.split\\('>'\\)[0]\\).filter\\(Boolean\\)\\); console.log\\('涉及法律: ' + [...laws].length + ' 部'\\);\")",
+      "Bash(node -e \"console.log\\(require.resolve\\('pdf-parse'\\)\\)\")",
+      "Bash(npm uninstall *)",
+      "Bash(py --version)",
+      "Bash(where python *)",
+      "Bash(node -e \"require\\('pdfjs-dist'\\)\")",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(node scripts/parse-cases.mjs)",
+      "Bash(node -e \"const d=require\\('./cases.json'\\); console.log\\('cases.json 条目数: ' + d.length\\); console.log\\('字段: ' + Object.keys\\(d[0]\\).join\\(', '\\)\\);\")",
+      "Bash(node scripts/refill-cases.mjs)",
+      "Bash(rm -rf node_modules package.json package-lock.json)",
+      "Bash(node -e \"const d=require\\('./cases.json'\\); console.log\\('cases.json: ' + d.length + ' 条, 字段: ' + Object.keys\\(d[0]\\).join\\(', '\\)\\);\")"
+    ]
+  }
+}

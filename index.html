@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="法简AI - 智能法律案情解析平台，AI驱动案情分析、法条检索、判例参考">
+  <meta name="theme-color" content="#1a2744">
+  <title>法简AI - 智能法律案情解析</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/home.css">
+</head>
+<body>
+
+  <!-- 离线提示 -->
+  <div class="offline-banner" id="offline-banner">
+    当前网络已断开，部分功能不可用
+  </div>
+
+  <!-- 站点头部 -->
+  <header class="site-header">
+    <nav class="nav-bar">
+      <a href="index.html" class="nav-logo">
+        <span class="logo-icon">法</span>
+        法简AI
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">首页</a></li>
+        <li><a href="analysis.html">案情解析</a></li>
+        <li><span class="nav-vip-badge" id="nav-vip-badge">免费试用</span></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- 首页 Hero -->
+  <section class="hero">
+    <div class="container-narrow">
+      <div class="hero-badge">AI 驱动 · 法律智能解析</div>
+      <h1 class="hero-title">
+        用 <span class="highlight">AI</span> 读懂每一份案情
+      </h1>
+      <p class="hero-subtitle">
+        专为法学生、法考人群、新手实习法务打造。<br>
+        结构化录入 or 自由粘贴，一键深度解析，自动匹配法条与判例。
+      </p>
+      <div class="hero-actions">
+        <a href="analysis.html" class="btn btn-primary btn-lg">开始解析案情</a>
+        <button class="btn btn-outline btn-lg" id="btn-home-unlock">解锁永久VIP</button>
+      </div>
+      <p class="hero-trial-info" id="hero-trial-info">加载中...</p>
+    </div>
+  </section>
+
+  <!-- 核心特色 -->
+  <section class="features">
+    <div class="container">
+      <h2 class="section-title">为什么选择法简AI</h2>
+      <p class="section-desc">轻量化 · 专业 · 上手即用，拒绝臃肿与广告</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">1</div>
+          <h3>双模式案情录入</h3>
+          <p>结构化勾选表单，零基础小白无需梳理案情；同时支持自由粘贴长篇裁判文书与案例题干</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">2</div>
+          <h3>专业法律AI解析</h3>
+          <p>内置法律专属提示词，自动梳理事实、提炼争议焦点、法律定性、构成要件分析，输出标准化可直接引用</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">3</div>
+          <h3>法条判例联动检索</h3>
+          <p>AI提取关键词后自动匹配现行法条、官方司法解释、同类参考判例，一站式获得完整法律依据</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">4</div>
+          <h3>轻量无广告</h3>
+          <p>极简操作、页面高级质感，区别于北大法宝等重型平台，专注核心法律分析，拒绝广告干扰</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">5</div>
+          <h3>永久VIP极简付费</h3>
+          <p>仅设一档永久解锁，无月卡、无时效卡、无套路，一次激活终身使用</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">6</div>
+          <h3>全平台响应式</h3>
+          <p>电脑端宽屏排版、手机端自适应，键盘适配优化，随时随地解析案情</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 使用流程 -->
+  <section class="how-it-works">
+    <div class="container">
+      <h2 class="section-title">三步完成案情解析</h2>
+      <p class="section-desc">从录入到结果，全程不超过 30 秒</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h4>录入案情</h4>
+          <p>结构化勾选或自由粘贴案情文本</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h4>AI深度解析</h4>
+          <p>自动梳理事实、定性、争议焦点</p>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h4>法条判例联动</h4>
+          <p>匹配现行法条、司法解释、参考判例</p>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <h4>一键复制导出</h4>
+          <p>标准化格式输出，直接引用</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 试用规则 -->
+  <section class="trial-rules">
+    <div class="container">
+      <div class="rules-card">
+        <h3>免费试用规则</h3>
+        <ul class="rules-list">
+          <li>每位用户终身享有 <strong>1 次</strong> 免费完整解析额度</li>
+          <li>试用包含完整AI法律分析 + 法条摘要 + 判例要点</li>
+          <li>次数用尽后需使用 <strong>永久VIP密钥</strong> 解锁</li>
+          <li>永久VIP：无限解析次数 + 完整法条原文 + 完整判决结果</li>
+          <li>仅支持唯一永久VIP档位，无月卡、无单次次数卡</li>
+          <li>VIP密钥为人工发放，请联系管理员获取</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container-narrow">
+      <h2>准备好开始法律智能解析了吗？</h2>
+      <p>免费试用 1 次，体验 AI 驱动的专业案情分析</p>
+      <a href="analysis.html" class="btn btn-accent btn-lg">立即开始</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>法简AI &copy; 2026 &mdash; 智能法律案情解析平台 &mdash; 仅供法律学习与研究参考</p>
+    </div>
+  </footer>
+
+  <!-- 密钥解锁弹窗（全局复用） -->
+  <div class="modal-mask hidden" id="vip-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">解锁永久VIP</h3>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.88rem;color:var(--gray-600);margin-bottom:var(--space-md);">
+          输入永久VIP密钥，解锁无限解析次数与全部高阶法律内容
+        </p>
+        <div class="vip-input-row">
+          <input type="text" class="form-input" id="vip-key-input"
+                 placeholder="请输入VIP密钥" autocomplete="off">
+          <button class="btn btn-primary" id="btn-vip-submit">验证解锁</button>
+        </div>
+        <div class="vip-status-msg" id="vip-status-msg"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btn-vip-close">仅浏览页面</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 脚本 ========== -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>

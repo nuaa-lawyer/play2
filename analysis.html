@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="法简AI - 案情解析">
+  <meta name="theme-color" content="#1a2744">
+  <title>案情解析 - 法简AI</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/analysis.css">
+</head>
+<body>
+
+  <!-- 离线提示 -->
+  <div class="offline-banner" id="offline-banner">
+    当前网络已断开，部分功能不可用
+  </div>
+
+  <!-- 站点头部 -->
+  <header class="site-header">
+    <nav class="nav-bar">
+      <a href="index.html" class="nav-logo">
+        <span class="logo-icon">法</span>
+        法简AI
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">首页</a></li>
+        <li><a href="analysis.html" class="active">案情解析</a></li>
+        <li><span class="nav-vip-badge" id="nav-vip-badge">免费试用</span></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- 权限状态栏 -->
+  <div class="quota-bar" id="quota-bar">
+    <div class="container">
+      <span class="quota-remaining" id="quota-remaining">加载中...</span>
+      <button class="quota-vip-link" id="btn-quota-unlock">解锁永久VIP</button>
+    </div>
+  </div>
+
+  <!-- 案情录入区 -->
+  <section class="input-section">
+    <div class="container-narrow">
+      <div class="input-card">
+        <!-- Tab 切换 -->
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="structured">结构化表单录入</button>
+          <button class="tab-btn" data-tab="freetext">自由文本录入</button>
+        </div>
+
+        <!-- Tab: 结构化表单 -->
+        <div class="tab-panel active" id="panel-structured">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">案件大类 <span class="required">*</span></label>
+              <div class="radio-group" id="category-group">
+                <div class="radio-item">
+                  <input type="radio" name="category" value="刑法" id="cat-criminal">
+                  <label for="cat-criminal">刑法</label>
+                </div>
+                <div class="radio-item">
+                  <input type="radio" name="category" value="民法" id="cat-civil">
+                  <label for="cat-civil">民法</label>
+                </div>
+                <div class="radio-item">
+                  <input type="radio" name="category" value="行政法" id="cat-admin">
+                  <label for="cat-admin">行政法</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">细分案由（可多选）</label>
+              <div class="checkbox-group" id="subcategory-group">
+                <!-- 动态填充 -->
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row single">
+            <div class="form-group">
+              <label class="form-label">行为事实</label>
+              <textarea class="form-textarea" id="input-facts"
+                        placeholder="请描述案件的核心行为事实，包括时间、地点、行为方式、参与人员等..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">损害结果</label>
+              <textarea class="form-textarea" id="input-damage"
+                        placeholder="请描述案件造成的损害结果或危害后果..." style="min-height:100px;"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">证据情况</label>
+              <textarea class="form-textarea" id="input-evidence"
+                        placeholder="请描述现有证据情况，如书证、物证、证人证言等..." style="min-height:100px;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: 自由文本 -->
+        <div class="tab-panel" id="panel-freetext">
+          <div class="form-group">
+            <label class="form-label">案情文本 <span class="required">*</span></label>
+            <textarea class="form-textarea" id="input-freetext"
+                      placeholder="支持直接粘贴长篇案情描述、裁判文书、案例题干、法律事实陈述..."
+                      style="min-height:320px;"></textarea>
+            <p class="form-hint">支持粘贴完整的裁判文书、案情描述或案例题干，AI将自动提取关键信息进行分析</p>
+          </div>
+        </div>
+
+        <!-- 提交按钮 -->
+        <div class="submit-area">
+          <button class="btn btn-primary btn-lg" id="btn-analyze">
+            开始AI解析
+          </button>
+          <span class="submit-hint" id="submit-hint"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 结果展示区 -->
+  <section class="results-section" id="results-section" style="display:none;">
+    <div class="container-narrow">
+
+      <!-- AI 法律分析 -->
+      <div class="card ai-card result-section" id="result-ai">
+        <div class="card-header">
+          <div class="flex items-center gap-sm">
+            <span class="section-badge badge-ai">AI 解析</span>
+            <h3 class="card-title">法律分析报告</h3>
+          </div>
+          <button class="copy-btn" data-copy-target="result-ai-body">复制全文</button>
+        </div>
+        <div class="card-body" id="result-ai-body">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+
+      <!-- 法条集合 -->
+      <div class="card result-section" id="result-law">
+        <div class="card-header">
+          <div class="flex items-center gap-sm">
+            <span class="section-badge badge-law">法条</span>
+            <h3 class="card-title">相关法条</h3>
+          </div>
+        </div>
+        <div class="card-body" id="result-law-body">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+
+      <!-- 司法解释 -->
+      <div class="card result-section" id="result-explain">
+        <div class="card-header">
+          <div class="flex items-center gap-sm">
+            <span class="section-badge badge-explain">解释</span>
+            <h3 class="card-title">司法解释</h3>
+          </div>
+        </div>
+        <div class="card-body" id="result-explain-body">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+
+      <!-- 参考判例 -->
+      <div class="card result-section" id="result-case">
+        <div class="card-header">
+          <div class="flex items-center gap-sm">
+            <span class="section-badge badge-case">判例</span>
+            <h3 class="card-title">参考判例</h3>
+          </div>
+        </div>
+        <div class="card-body" id="result-case-body">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>法简AI &copy; 2026 &mdash; AI生成内容仅供学习参考，不构成法律意见</p>
+    </div>
+  </footer>
+
+  <!-- 次数耗尽 / VIP 解锁弹窗 -->
+  <div class="modal-mask hidden" id="lock-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">免费解析次数已用尽</h3>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.88rem;color:var(--gray-600);margin-bottom:var(--space-md);">
+          仅支持永久VIP密钥解锁，无二次免费机会。解锁后享无限解析次数与全部高阶法律内容。
+        </p>
+        <div class="vip-input-row">
+          <input type="text" class="form-input" id="lock-key-input"
+                 placeholder="请输入VIP密钥" autocomplete="off">
+          <button class="btn btn-primary" id="btn-lock-submit">验证解锁</button>
+        </div>
+        <div class="vip-status-msg" id="lock-status-msg"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btn-lock-close">仅浏览页面</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIP 主动解锁弹窗 -->
+  <div class="modal-mask hidden" id="vip-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">解锁永久VIP</h3>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.88rem;color:var(--gray-600);margin-bottom:var(--space-md);">
+          输入永久VIP密钥，解锁无限解析次数与全部高阶法律内容
+        </p>
+        <div class="vip-input-row">
+          <input type="text" class="form-input" id="vip-key-input"
+                 placeholder="请输入VIP密钥" autocomplete="off">
+          <button class="btn btn-primary" id="btn-vip-submit">验证解锁</button>
+        </div>
+        <div class="vip-status-msg" id="vip-status-msg"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="btn-vip-close">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 脚本 ========== -->
+  <script src="env.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/api/deepseek.js"></script>
+  <script src="js/api/vika.js"></script>
+  <script src="js/analysis.js"></script>
+</body>
+</html>
