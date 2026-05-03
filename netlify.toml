@@ -5,7 +5,7 @@
 
 [build]
   publish = "/"
-  command = "node -e \"const fs=require('fs');fs.writeFileSync('env.js','window.ENV='+JSON.stringify({DEEPSEEK_API_KEY:process.env.DEEPSEEK_API_KEY||'',DEEPSEEK_API_URL:'/.netlify/functions/deepseek-proxy',DEEPSEEK_MODEL:'deepseek-v4-pro',REQUEST_TIMEOUT:60000,MAX_DATA_DISPLAY:20})+';')\""
+  command = ""
 
 [functions]
   timeout = 60
