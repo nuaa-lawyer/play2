@@ -1,9 +1,5 @@
 {
-  "name": "fajian-ai",
-  "version": "1.0.0",
-  "description": "法简AI - 智能案情分析平台",
-  "private": true,
   "dependencies": {
-    "node-fetch": "2.6.7"
+    "node-fetch": "^2.7.0"
   }
 }
