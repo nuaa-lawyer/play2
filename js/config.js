@@ -9,9 +9,16 @@ const Config = (function () {
   const env = window.ENV || {};
 
   // ---------- DeepSeek ----------
-  const DEEPSEEK_API_KEY = env.DEEPSEEK_API_KEY || '';
-  const DEEPSEEK_API_URL = env.DEEPSEEK_API_URL || '/api/deepseek/v1/chat/completions';
-  const DEEPSEEK_MODEL   = env.DEEPSEEK_MODEL   || 'deepseek-v4-pro';
+  // 多来源读取密钥：本地env.js → Netlify注入全局变量
+  var DEEPSEEK_API_KEY = env.DEEPSEEK_API_KEY
+    || window.DEEPSEEK_API_KEY
+    || '';
+  var DEEPSEEK_API_URL = env.DEEPSEEK_API_URL
+    || window.DEEPSEEK_API_URL
+    || '/api/deepseek/v1/chat/completions';
+  var DEEPSEEK_MODEL   = env.DEEPSEEK_MODEL
+    || window.DEEPSEEK_MODEL
+    || 'deepseek-v4-pro';
 
   // ---------- 通用 ----------
   const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || 30000;

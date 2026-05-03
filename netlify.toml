@@ -4,6 +4,7 @@
 # ============================================================
 
 [build]
+  command = "echo \"window.ENV = { DEEPSEEK_API_KEY: '${DEEPSEEK_API_KEY}', DEEPSEEK_API_URL: '/api/deepseek/v1/chat/completions', DEEPSEEK_MODEL: 'deepseek-v4-pro', REQUEST_TIMEOUT: 30000, MAX_DATA_DISPLAY: 20 };\" > env.js"
   publish = "/"
 
 # DeepSeek API 代理

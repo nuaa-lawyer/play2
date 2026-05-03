@@ -141,8 +141,14 @@ const Auth = (function () {
 
   // ---------- 试用次数 ----------
 
-  /** 检查试用是否已使用 */
+  /** 检查试用是否已使用（sessionStorage + localStorage 双检） */
   function isTrialUsed() {
+    // 会话内快速锁优先
+    try {
+      var sessionVal = sessionStorage.getItem(STORAGE_KEYS.TRIAL_USED);
+      if (sessionVal === 'true') return true;
+    } catch(e) {}
+
     const val = Utils.storageGet(STORAGE_KEYS.TRIAL_USED);
     const sig = Utils.storageGet(STORAGE_KEYS.TRIAL_SIG);
 
@@ -157,8 +163,19 @@ const Auth = (function () {
 
   /** 标记试用已使用 */
   function markTrialUsed() {
-    Utils.storageSet(STORAGE_KEYS.TRIAL_USED, 'true');
-    Utils.storageSet(STORAGE_KEYS.TRIAL_SIG, _sign('true'));
+    var val = 'true';
+    var sig = _sign(val);
+    // 写入主值
+    Utils.storageSet(STORAGE_KEYS.TRIAL_USED, val);
+    Utils.storageSet(STORAGE_KEYS.TRIAL_SIG, sig);
+    // 回读验证，失败则重试一次
+    var writtenVal = Utils.storageGet(STORAGE_KEYS.TRIAL_USED);
+    if (writtenVal !== val) {
+      Utils.storageSet(STORAGE_KEYS.TRIAL_USED, val);
+      Utils.storageSet(STORAGE_KEYS.TRIAL_SIG, sig);
+    }
+    // sessionStorage 会话内快速锁（防同会话多标签并发绕过）
+    try { sessionStorage.setItem(STORAGE_KEYS.TRIAL_USED, val); } catch(e) {}
   }
 
   // ---------- VIP 身份 ----------
@@ -178,9 +195,10 @@ const Auth = (function () {
   function setVIP() {
     Utils.storageSet(STORAGE_KEYS.VIP_STATUS, 'true');
     Utils.storageSet(STORAGE_KEYS.VIP_SIG, _sign('true'));
-    // VIP 激活后清除试用标记，确保后续无干扰
-    Utils.storageSet(STORAGE_KEYS.TRIAL_USED, 'false');
-    Utils.storageSet(STORAGE_KEYS.TRIAL_SIG, _sign('false'));
+    // 清除试用标记和会话锁
+    Utils.storageRemove(STORAGE_KEYS.TRIAL_USED);
+    Utils.storageRemove(STORAGE_KEYS.TRIAL_SIG);
+    try { sessionStorage.removeItem(STORAGE_KEYS.TRIAL_USED); } catch(e) {}
   }
 
   // ---------- 密钥校验 ----------

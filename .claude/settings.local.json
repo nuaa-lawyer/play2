@@ -24,7 +24,8 @@
       "Bash(node -e \"const d=require\\('./cases.json'\\); console.log\\('cases.json 条目数: ' + d.length\\); console.log\\('字段: ' + Object.keys\\(d[0]\\).join\\(', '\\)\\);\")",
       "Bash(node scripts/refill-cases.mjs)",
       "Bash(rm -rf node_modules package.json package-lock.json)",
-      "Bash(node -e \"const d=require\\('./cases.json'\\); console.log\\('cases.json: ' + d.length + ' 条, 字段: ' + Object.keys\\(d[0]\\).join\\(', '\\)\\);\")"
+      "Bash(node -e \"const d=require\\('./cases.json'\\); console.log\\('cases.json: ' + d.length + ' 条, 字段: ' + Object.keys\\(d[0]\\).join\\(', '\\)\\);\")",
+      "Bash(node *)"
     ]
   }
 }

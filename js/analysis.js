@@ -81,6 +81,10 @@
   let isAnalyzing = false;
   let lockModalShown = false;      // 同会话只弹一次
   let vikaAbortController = null;
+  // 缓存最近一次检索数据，供VIP解锁后即时刷新渲染
+  let cachedLawData = null;
+  let cachedExplainData = null;
+  let cachedCaseData = null;
 
   // ---------- 初始化 ----------
 
@@ -138,6 +142,8 @@
     const status = Auth.getStatus();
     if (!status.canAnalyze && !status.isVIP) {
       lockAllInputs();
+      // 延迟弹出锁定弹窗，确保DOM已完全渲染
+      setTimeout(function() { showLockModal(); }, 300);
     }
   }
 
@@ -148,6 +154,11 @@
     const inputs = Utils.$$('input, textarea, select, .radio-item input, .checkbox-item input', document);
     inputs.forEach(el => {
       el.disabled = true;
+    });
+    // 禁用Tab切换按钮
+    dom.tabBtns.forEach(btn => {
+      btn.disabled = true;
+      btn.classList.add('disabled');
     });
     // 解析按钮
     if (dom.btnAnalyze) {
@@ -164,6 +175,11 @@
     inputs.forEach(el => {
       el.disabled = false;
     });
+    // 恢复Tab切换按钮
+    dom.tabBtns.forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove('disabled');
+    });
     if (dom.btnAnalyze) {
       dom.btnAnalyze.disabled = false;
       dom.btnAnalyze.classList.remove('disabled');
@@ -177,6 +193,11 @@
     const inputs = Utils.$$('input, textarea, select, .radio-item input, .checkbox-item input', document);
     inputs.forEach(el => {
       el.disabled = false;
+    });
+    // 恢复Tab切换按钮
+    dom.tabBtns.forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove('disabled');
     });
     if (dom.btnAnalyze) {
       dom.btnAnalyze.disabled = false;
@@ -377,6 +398,12 @@
     let keywords = [];
     const isVIP = Auth.isVIP();
 
+    // 非VIP立即标记试用（在AI调用前持久化，防止并发绕过）
+    if (!isVIP) {
+      Auth.markTrialUsed();
+      updateQuotaBar();
+    }
+
     try {
       // ------ Step 1: DeepSeek 解析 ------
       deepseekResult = await DeepSeekAPI.analyze(input.text, input.category);
@@ -384,12 +411,6 @@
 
       // 渲染 AI 分析
       renderAIResult(deepseekResult);
-
-      // 标记试用（非VIP）
-      if (!isVIP) {
-        Auth.markTrialUsed();
-        updateQuotaBar();
-      }
 
     } catch (err) {
       // DeepSeek 失败 → 降级：隐藏 AI 板块，仅提示
@@ -405,7 +426,7 @@
     vikaAbortController = new AbortController();
     const signal = vikaAbortController.signal;
 
-    const lawPromise = VikaAPI.getLawData(keywords, isVIP, signal)
+    const lawPromise = VikaAPI.getLawData(keywords, isVIP, signal, input.category)
       .then(data => renderLawData(data, isVIP))
       .catch(err => {
         if (err.name !== 'AbortError') {
@@ -413,7 +434,7 @@
         }
       });
 
-    const explainPromise = VikaAPI.getExplainData(keywords, isVIP, signal)
+    const explainPromise = VikaAPI.getExplainData(keywords, isVIP, signal, input.category)
       .then(data => renderExplainData(data, isVIP))
       .catch(err => {
         if (err.name !== 'AbortError') {
@@ -421,7 +442,7 @@
         }
       });
 
-    const casePromise = VikaAPI.getCaseData(keywords, isVIP, signal)
+    const casePromise = VikaAPI.getCaseData(keywords, isVIP, signal, input.category)
       .then(data => renderCaseData(data, isVIP))
       .catch(err => {
         if (err.name !== 'AbortError') {
@@ -486,6 +507,7 @@
   // ---------- 渲染法条 ----------
 
   function renderLawData(data, isVIP) {
+    cachedLawData = data;
     if (!data || data.length === 0) {
       Components.showEmpty('#result-law-body', '暂无匹配法条');
       return;
@@ -514,6 +536,7 @@
   // ---------- 渲染司法解释 ----------
 
   function renderExplainData(data, isVIP) {
+    cachedExplainData = data;
     if (!data || data.length === 0) {
       Components.showEmpty('#result-explain-body', '暂无匹配司法解释');
       return;
@@ -542,6 +565,7 @@
   // ---------- 渲染判例 ----------
 
   function renderCaseData(data, isVIP) {
+    cachedCaseData = data;
     if (!data || data.length === 0) {
       Components.showEmpty('#result-case-body', '暂无匹配参考判例');
       return;
@@ -566,9 +590,26 @@
     bindUnlockLinksIn(dom.resultCaseBody);
   }
 
+  // ---------- VIP解锁后即时刷新 ----------
+
+  function refreshResultsForVIP() {
+    if (cachedLawData && cachedLawData.length > 0) {
+      renderLawData(cachedLawData, true);
+    }
+    if (cachedExplainData && cachedExplainData.length > 0) {
+      renderExplainData(cachedExplainData, true);
+    }
+    if (cachedCaseData && cachedCaseData.length > 0) {
+      renderCaseData(cachedCaseData, true);
+    }
+  }
+
   // ---------- 清空结果 ----------
 
   function clearResults() {
+    cachedLawData = null;
+    cachedExplainData = null;
+    cachedCaseData = null;
     Utils.setHTML(dom.resultAIBody, '');
     Utils.setHTML(dom.resultLawBody, '');
     Utils.setHTML(dom.resultExplainBody, '');
@@ -646,6 +687,7 @@
         updateVIPBadge();
         updateQuotaBar();
         fullUnlock();
+        refreshResultsForVIP();
         Components.showToast('永久VIP已解锁，享无限解析次数', 'success');
         setTimeout(hide, 1200);
       } else {
@@ -734,6 +776,7 @@
         updateVIPBadge();
         updateQuotaBar();
         fullUnlock();
+        refreshResultsForVIP();
         Components.showToast('永久VIP已解锁，享无限解析次数', 'success');
         setTimeout(hide, 1200);
       } else {
