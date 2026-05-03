@@ -9,7 +9,7 @@ const Config = (function () {
   const env = window.ENV || {};
 
   // ---------- DeepSeek ----------
-  // 多来源读取密钥：本地env.js → Netlify注入全局变量
+  // 统一密钥来源（优先级：window.ENV > window 全局直接注入 > 空）
   var DEEPSEEK_API_KEY = env.DEEPSEEK_API_KEY
     || window.DEEPSEEK_API_KEY
     || '';
@@ -20,9 +20,14 @@ const Config = (function () {
     || window.DEEPSEEK_MODEL
     || 'deepseek-v4-pro';
 
+  // 若密钥为空，输出警告便于排查
+  if (!DEEPSEEK_API_KEY) {
+    console.warn('[Config] DeepSeek API Key 未配置，请检查 env.js 或 Netlify 环境变量 DEEPSEEK_API_KEY');
+  }
+
   // ---------- 通用 ----------
-  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || 30000;
-  const MAX_DATA_DISPLAY = env.MAX_DATA_DISPLAY || 20;
+  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || window.REQUEST_TIMEOUT || 30000;
+  const MAX_DATA_DISPLAY = env.MAX_DATA_DISPLAY || window.MAX_DATA_DISPLAY || 20;
 
   // ---------- 系统提示词（内置不可篡改） ----------
   const SYSTEM_PROMPT = `你是一位资深中国法律专家AI，专注于案情分析与法律研究。

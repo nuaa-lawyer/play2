@@ -8,6 +8,7 @@ const DeepSeekAPI = (function () {
 
   let _abortController = null;
   let _isRequesting = false;
+  let _isTimeoutAbort = false;
 
   // ---------- 关键词截取 ----------
 
@@ -114,8 +115,17 @@ const DeepSeekAPI = (function () {
 
     _abortController = new AbortController();
     _isRequesting = true;
+    _isTimeoutAbort = false;
 
     const timeout = Config.getRequestTimeout();
+
+    // 超时定时器 — 超时后主动 abort 以释放网络资源
+    const timeoutId = setTimeout(() => {
+      _isTimeoutAbort = true;
+      if (_abortController) {
+        _abortController.abort();
+      }
+    }, timeout);
 
     const body = {
       model: Config.getDeepSeekModel(),
@@ -130,22 +140,17 @@ const DeepSeekAPI = (function () {
 
     let response;
     try {
-      // 超时竞速
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('REQUEST_TIMEOUT')), timeout);
-      });
-
-      const fetchPromise = fetch(Config.getDeepSeekApiUrl(), {
+      response = await fetch(Config.getDeepSeekApiUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + Config.getDeepSeekApiKey()
+          'Authorization': 'Bearer ' + Config.getDeepSeekApiKey(),
+          'Accept': 'application/json',
+          'User-Agent': 'FajianAI/1.0'
         },
         body: JSON.stringify(body),
         signal: _abortController.signal
       });
-
-      response = await Promise.race([fetchPromise, timeoutPromise]);
 
       // HTTP 错误处理
       if (!response.ok) {
@@ -178,16 +183,20 @@ const DeepSeekAPI = (function () {
       return { sections, keywords: finalKeywords, rawText };
 
     } catch (err) {
+      // AbortError 区分超时/手动中止
       if (err.name === 'AbortError') {
-        throw new Error('REQUEST_ABORTED');
+        throw new Error(_isTimeoutAbort ? 'REQUEST_TIMEOUT' : 'REQUEST_ABORTED');
       }
-      if (err.message === 'REQUEST_TIMEOUT') {
-        throw new Error('REQUEST_TIMEOUT');
+      // 网络层错误（DNS/代理/TCP 失败）
+      if (err.name === 'TypeError' || (err.message && err.message.indexOf('Failed to fetch') !== -1)) {
+        throw new Error('NETWORK_ERROR');
       }
       throw err;
     } finally {
+      clearTimeout(timeoutId);
       _isRequesting = false;
       _abortController = null;
+      _isTimeoutAbort = false;
     }
   }
 
@@ -199,10 +208,10 @@ const DeepSeekAPI = (function () {
       'BALANCE_ERROR':   'API 账户余额不足，请充值后重试',
       'RATE_LIMIT':      '请求频率超限，请稍后再试',
       'SERVER_ERROR':    'DeepSeek 服务器异常，请稍后重试',
-      'REQUEST_TIMEOUT': '请求超时，请检查网络后重试',
+      'REQUEST_TIMEOUT': '请求超时（30 秒），请稍后重试或检查网络环境',
       'REQUEST_ABORTED': '请求已取消',
       'INVALID_RESPONSE':'AI 返回数据格式异常，请重试',
-      'NETWORK_ERROR':   '网络连接失败，请检查网络状态'
+      'NETWORK_ERROR':   '网络连接失败，请检查网络后重试'
     };
     return map[code] || ('请求失败：' + code);
   }
