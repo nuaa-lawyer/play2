@@ -13,9 +13,6 @@ const Config = (function () {
   const DEEPSEEK_API_URL = env.DEEPSEEK_API_URL || '/api/deepseek/v1/chat/completions';
   const DEEPSEEK_MODEL   = env.DEEPSEEK_MODEL   || 'deepseek-v4-pro';
 
-  // ---------- VIP ----------
-  const VIP_KEY_WHITELIST = Array.isArray(env.VIP_KEY_WHITELIST) ? env.VIP_KEY_WHITELIST : [];
-
   // ---------- 通用 ----------
   const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || 30000;
   const MAX_DATA_DISPLAY = env.MAX_DATA_DISPLAY || 20;
@@ -56,7 +53,6 @@ const Config = (function () {
     getDeepSeekApiKey:   () => DEEPSEEK_API_KEY,
     getDeepSeekApiUrl:   () => DEEPSEEK_API_URL,
     getDeepSeekModel:    () => DEEPSEEK_MODEL,
-    getVipKeyWhitelist:  () => VIP_KEY_WHITELIST.slice(),
     getRequestTimeout:   () => REQUEST_TIMEOUT,
     getMaxDataDisplay:   () => MAX_DATA_DISPLAY,
     getSystemPrompt:     () => SYSTEM_PROMPT,
