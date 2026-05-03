@@ -6,6 +6,8 @@
 const VikaAPI = (function () {
   'use strict';
 
+  const MIN_KEYWORD_LENGTH = 2;
+
   // ---------- 通用 JSON 读取 ----------
 
   async function _loadJSON(filename, signal) {
@@ -20,24 +22,52 @@ const VikaAPI = (function () {
     return data;
   }
 
-  // ---------- 关键词匹配 ----------
+  // ---------- 关键词清洗 ----------
+
+  function _cleanKeywords(keywords) {
+    if (!keywords || !Array.isArray(keywords)) return [];
+    return keywords
+      .map(function (kw) { return (kw || '').trim(); })
+      .filter(function (kw) { return kw.length >= MIN_KEYWORD_LENGTH; });
+  }
+
+  // ---------- 关键词匹配（布尔判定） ----------
 
   function _matchKeywords(record, keywords) {
-    if (!keywords || keywords.length === 0) return true;
+    var cleaned = _cleanKeywords(keywords);
+    if (cleaned.length === 0) return true;
     var kwField = (record['检索关键词'] || '').toLowerCase().trim();
     if (!kwField) return false;
 
-    // 将记录关键词字段按常见分隔符拆分为独立词组
     var recordTokens = kwField.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
 
-    return keywords.some(function(kw) {
-      var lowerKW = kw.toLowerCase().trim();
-      if (!lowerKW) return false;
-      // 双向匹配：搜索词包含记录词 或 记录词包含搜索词 或 字段整体包含
+    return cleaned.some(function(kw) {
+      var lowerKW = kw.toLowerCase();
       return recordTokens.some(function(token) {
         return token.indexOf(lowerKW) !== -1 || lowerKW.indexOf(token) !== -1;
       }) || kwField.indexOf(lowerKW) !== -1;
     });
+  }
+
+  // ---------- 关键词匹配得分（用于排序） ----------
+
+  function _scoreKeywords(record, keywords) {
+    var cleaned = _cleanKeywords(keywords);
+    if (cleaned.length === 0) return 0;
+    var kwField = (record['检索关键词'] || '').toLowerCase().trim();
+    if (!kwField) return 0;
+
+    var recordTokens = kwField.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
+
+    var score = 0;
+    cleaned.forEach(function(kw) {
+      var lowerKW = kw.toLowerCase();
+      var matched = recordTokens.some(function(token) {
+        return token.indexOf(lowerKW) !== -1 || lowerKW.indexOf(token) !== -1;
+      }) || kwField.indexOf(lowerKW) !== -1;
+      if (matched) score++;
+    });
+    return score;
   }
 
   /**
@@ -78,7 +108,7 @@ const VikaAPI = (function () {
     const seen = new Set();
     return records.filter(r => {
       const k = keyFn(r);
-      if (seen.has(k)) return false;
+      if (!k || seen.has(k)) return false;
       seen.add(k);
       return true;
     });
@@ -98,23 +128,26 @@ const VikaAPI = (function () {
       var filtered;
       if (keywords && keywords.length > 0) {
         filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
+        filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
       } else {
-        // 无关键词时按大类兜底过滤，避免返回全量无关法条
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
       }
 
-      const unique = _deduplicate(filtered, r => r['法条序号'] || r['法条原文'] || '');
+      var keyFn = function(r) { return r['法条序号'] || r['法条原文'] || ''; };
+      const unique = _deduplicate(filtered, keyFn);
 
-      return unique.slice(0, maxDisplay).map((f, index) => ({
-        id: f['法条序号'] || ('law_' + index),
-        category:   f['法条分类']   || '',
-        chapter:    f['法条章节']   || '',
-        number:     f['法条序号']   || '',
-        fullText:   f['法条原文']   || '',
-        applicable: f['适用案由']   || '',
-        keywords:   f['检索关键词'] || '',
-        summary:    (f['法条原文'] || '').substring(0, 150)
-      }));
+      return unique.slice(0, maxDisplay).map(function(f, index) {
+        return {
+          id: f['法条序号'] || ('law_' + index),
+          category:   f['法条分类']   || '',
+          chapter:    f['法条章节']   || '',
+          number:     f['法条序号']   || '',
+          fullText:   f['法条原文']   || '',
+          applicable: f['适用案由']   || '',
+          keywords:   f['检索关键词'] || '',
+          summary:    (f['法条原文'] || '').substring(0, 150)
+        };
+      });
     } catch (e) {
       if (e.name === 'AbortError') throw e;
       return [];
@@ -123,7 +156,7 @@ const VikaAPI = (function () {
 
   /**
    * 检索司法解释表
-   * 字段：关联法条序号、解释名称、发布单位、解释原文、适用场景、检索关键词
+   * 字段：司法解释文号、解释全称、发布机关、原文条款、适用案由、检索关键词
    */
   async function getExplainData(keywords, isVIP, signal, category) {
     try {
@@ -133,22 +166,26 @@ const VikaAPI = (function () {
       var filtered;
       if (keywords && keywords.length > 0) {
         filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
+        filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
       }
 
-      const unique = _deduplicate(filtered, r => r['解释名称'] || r['解释原文'] || '');
+      var keyFn = function(r) { return r['解释全称'] || r['原文条款'] || ''; };
+      const unique = _deduplicate(filtered, keyFn);
 
-      return unique.slice(0, maxDisplay).map((f, index) => ({
-        id: f['解释名称'] || ('explain_' + index),
-        lawNumber:     f['关联法条序号'] || '',
-        name:          f['解释名称']     || '',
-        publisher:     f['发布单位']     || '',
-        fullText:      f['解释原文']     || '',
-        scenario:      f['适用场景']     || '',
-        keywords:      f['检索关键词']   || '',
-        summary:       (f['解释原文'] || '').substring(0, 150)
-      }));
+      return unique.slice(0, maxDisplay).map(function(f, index) {
+        return {
+          id: ('explain_' + index),
+          lawNumber:     f['司法解释文号'] || '',
+          name:          f['解释全称']     || '',
+          publisher:     f['发布机关']     || '',
+          fullText:      f['原文条款']     || '',
+          scenario:      f['适用案由']     || '',
+          keywords:      f['检索关键词']   || '',
+          summary:       (f['原文条款'] || '').substring(0, 150)
+        };
+      });
     } catch (e) {
       if (e.name === 'AbortError') throw e;
       return [];
@@ -167,21 +204,25 @@ const VikaAPI = (function () {
       var filtered;
       if (keywords && keywords.length > 0) {
         filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
+        filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
       }
 
-      const unique = _deduplicate(filtered, r => r['案情摘要'] || r['裁判要点'] || '');
+      var keyFn = function(r) { return r['案情摘要'] || r['裁判要点'] || ''; };
+      const unique = _deduplicate(filtered, keyFn);
 
-      return unique.slice(0, maxDisplay).map((f, index) => ({
-        id: ('case_' + index),
-        caseType:      f['案件类型'] || '',
-        relatedLaw:    f['关联法条'] || '',
-        summary:       f['案情摘要'] || '',
-        judgePoint:    f['裁判要点'] || '',
-        verdict:       f['判决结果'] || '',
-        keywords:      f['检索关键词'] || ''
-      }));
+      return unique.slice(0, maxDisplay).map(function(f, index) {
+        return {
+          id: ('case_' + index),
+          caseType:      f['案件类型'] || '',
+          relatedLaw:    f['关联法条'] || '',
+          summary:       f['案情摘要'] || '',
+          judgePoint:    f['裁判要点'] || '',
+          verdict:       f['判决结果'] || '',
+          keywords:      f['检索关键词'] || ''
+        };
+      });
     } catch (e) {
       if (e.name === 'AbortError') throw e;
       return [];

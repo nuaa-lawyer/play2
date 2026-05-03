@@ -1,19 +1,16 @@
 # ============================================================
 # 法简AI - Netlify 部署配置
-# 配置 API 代理规则，解决浏览器 CORS 跨域问题
+# 使用 Netlify Functions 代理 DeepSeek API 请求
 # ============================================================
 
 [build]
-  command = "node -e \"var fs=require('fs'),k=process.env.DEEPSEEK_API_KEY||'';fs.writeFileSync('env.js','window.ENV={DEEPSEEK_API_KEY:'+JSON.stringify(k)+',DEEPSEEK_API_URL:'+JSON.stringify('/api/deepseek/v1/chat/completions')+',DEEPSEEK_MODEL:'+JSON.stringify('deepseek-v4-pro')+',REQUEST_TIMEOUT:30000,MAX_DATA_DISPLAY:20};');\""
   publish = "/"
 
-# DeepSeek API 代理（30 秒超时，稳定转发）
-[[redirects]]
-  from = "/api/deepseek/*"
-  to = "https://api.deepseek.com/:splat"
-  status = 200
-  force = true
-  headers = { X-Forwarded-Host = "api.deepseek.com", X-Forwarded-Proto = "https", Cache-Control = "no-store" }
+[functions]
+  timeout = 30
+  node_bundler = "none"
+  external_node_modules = []
+  included_files = []
 
 # SPA 路由回退（确保刷新页面正常）
 [[redirects]]

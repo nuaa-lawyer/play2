@@ -15,13 +15,13 @@ const Config = (function () {
     || '';
   var DEEPSEEK_API_URL = env.DEEPSEEK_API_URL
     || window.DEEPSEEK_API_URL
-    || '/api/deepseek/v1/chat/completions';
+    || '/.netlify/functions/deepseek-proxy';
   var DEEPSEEK_MODEL   = env.DEEPSEEK_MODEL
     || window.DEEPSEEK_MODEL
     || 'deepseek-v4-pro';
 
-  // 若密钥为空，输出警告便于排查
-  if (!DEEPSEEK_API_KEY) {
+  // 代理模式下密钥由 Netlify Functions 注入；仅直连 DeepSeek 时需要前端配置
+  if (!DEEPSEEK_API_KEY && DEEPSEEK_API_URL.indexOf('deepseek.com') !== -1) {
     console.warn('[Config] DeepSeek API Key 未配置，请检查 env.js 或 Netlify 环境变量 DEEPSEEK_API_KEY');
   }
 
