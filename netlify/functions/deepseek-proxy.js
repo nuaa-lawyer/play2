@@ -25,7 +25,15 @@ exports.handler = async function (event, context) {
     };
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY || '';
+  let apiKey = process.env.DEEPSEEK_API_KEY || '';
+
+  if (!apiKey) {
+    const authHeader = event.headers['authorization'] || event.headers['Authorization'] || '';
+    const match = authHeader.match(/^Bearer\s+(.+)$/i);
+    if (match && match[1]) {
+      apiKey = match[1];
+    }
+  }
 
   if (!apiKey) {
     return {
