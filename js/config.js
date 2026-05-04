@@ -9,49 +9,30 @@ const Config = (function () {
   const env = window.ENV || {};
 
   // ---------- DeepSeek ----------
-  // 统一密钥来源（优先级：window.ENV > window 全局直接注入 > 空）
+  // 前端通过 Netlify Function 代理请求，密钥仅存储在服务端环境变量
   var DEEPSEEK_API_KEY = env.DEEPSEEK_API_KEY
     || window.DEEPSEEK_API_KEY
     || '';
   var DEEPSEEK_API_URL = env.DEEPSEEK_API_URL
     || window.DEEPSEEK_API_URL
-    || 'https://api.deepseek.com/chat/completions';
+    || '/.netlify/functions/deepseek';
   var DEEPSEEK_MODEL   = env.DEEPSEEK_MODEL
     || window.DEEPSEEK_MODEL
-    || 'deepseek-v4-pro';
-
-  // 直连 DeepSeek API，密钥由 env.js 或 Netlify 环境变量注入
-  if (!DEEPSEEK_API_KEY) {
-    console.warn('[Config] DeepSeek API Key 未配置，请检查 env.js');
-  }
+    || 'deepseek-chat';
 
   // ---------- 通用 ----------
-  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || window.REQUEST_TIMEOUT || 120000;
+  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || window.REQUEST_TIMEOUT || 10000;
   const MAX_DATA_DISPLAY = env.MAX_DATA_DISPLAY || window.MAX_DATA_DISPLAY || 20;
 
-  // ---------- 系统提示词（内置不可篡改） ----------
-  const SYSTEM_PROMPT = `你是一位资深中国法律专家AI，专注于案情分析与法律研究。
-
-请对用户提供的案情进行深度法律分析，严格按照以下结构输出：
-
-【案件事实重梳】
-客观提炼案件核心事实，时间线梳理，当事人行为归纳。
-
-【法律争议焦点】
-提炼案件中的核心法律争议问题，逐一列明。
-
-【行为法律定性】
-对涉案行为进行法律性质认定，明确适用的法律规范。
-
-【构成要件分析】
-逐项分析涉案行为是否满足相关法律构成要件。
-
-【完整法律评析】
-综合前述分析，给出完整法律意见与实务裁判逻辑推演。
+  // ---------- 系统提示词（极简版，确保10秒内响应） ----------
+  const SYSTEM_PROMPT = `你是一位中国法律AI助手。请极简回复，严格150字以内：
 
 【关键词】
-仅输出逗号分隔的纯文本法律关键词，用于数据库检索。关键词仅包含：案由、罪名、法律关系、行为特征，不含任何解释性文字。
-格式示例：故意杀人罪,刑法第232条,因果关系,主观故意,量刑情节`;
+仅输出3-5个核心法律关键词（案由/罪名/法条/法律关系），逗号分隔，不含解释文字。
+示例：故意杀人罪,刑法第232条,主观故意,因果关系
+
+【法律评析】
+极简短法律分析，严格150字以内，禁止长篇大论。`;
 
   // ---------- 案件大类兜底关键词 ----------
   const FALLBACK_KEYWORDS = {

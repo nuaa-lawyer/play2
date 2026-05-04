@@ -1,6 +1,7 @@
 // ============================================================
 // 法简AI - DeepSeek API 封装模块
-// AbortController 管理 / 超时控制 / 关键词截取 / 降级兜底
+// 通过 Netlify Function 代理请求，密钥仅存服务端
+// 超时 10 秒，免费版适配
 // ============================================================
 
 const DeepSeekAPI = (function () {
@@ -19,7 +20,6 @@ const DeepSeekAPI = (function () {
   function extractKeywords(text) {
     if (!text) return [];
 
-    // 多种正则匹配【关键词】区块，按优先级从高到低
     const patterns = [
       /【关键词】\s*[:：]?\s*([\s\S]*?)(?:$|(?=【))/,
       /关键词\s*[:：]\s*([\s\S]*?)(?:$|(?=【))/,
@@ -40,19 +40,16 @@ const DeepSeekAPI = (function () {
 
     if (!raw) return [];
 
-    // 多级清洗：换行→逗号，中英文分号→逗号，中文逗号→英文逗号
     raw = raw.replace(/[\n\r]+/g, ',')
              .replace(/[；;]/g, ',')
              .replace(/[，]/g, ',')
              .replace(/\s+/g, '')
              .replace(/[、]/g, ',');
 
-    // 拆分逗号分隔，过滤空值和异常长字符串
     const keywords = raw.split(',')
       .map(k => k.trim())
       .filter(k => k.length >= 1 && k.length < 50);
 
-    // 去重并保持顺序
     const seen = new Set();
     const result = [];
     for (const k of keywords) {
@@ -67,11 +64,19 @@ const DeepSeekAPI = (function () {
   // ---------- 结构化解析 ----------
 
   /**
-   * 解析 AI 返回的结构化内容
+   * 解析 AI 返回的结构化内容（支持极简/完整两种格式）
    * 返回 { sections, keywords }
    */
   function parseResponse(text) {
     const sections = {};
+
+    // 优先匹配极简格式【法律评析】
+    let evalMatch = text.match(/【法律评析】\s*[:：]?\s*([\s\S]*?)(?:$|(?=【))/);
+    if (evalMatch && evalMatch[1]) {
+      sections['evaluation'] = evalMatch[1].trim();
+    }
+
+    // 兼容完整五段式格式
     const mapping = {
       '案件事实重梳': 'facts',
       '法律争议焦点': 'disputes',
@@ -80,15 +85,13 @@ const DeepSeekAPI = (function () {
       '完整法律评析': 'evaluation'
     };
 
-    let remaining = text;
-
     for (const [cn, en] of Object.entries(mapping)) {
+      if (sections[en] && sections[en].length > 0) continue;
       const pat = new RegExp('【' + cn + '】\\s*[:：]?\\s*([\\s\\S]*?)(?=$|(?=【))');
-      const m = remaining.match(pat);
+      const m = text.match(pat);
       if (m && m[1]) {
         sections[en] = m[1].trim();
-        remaining = remaining.replace(m[0], '');
-      } else {
+      } else if (!sections[en]) {
         sections[en] = '';
       }
     }
@@ -100,7 +103,6 @@ const DeepSeekAPI = (function () {
 
   // ---------- 请求发送 ----------
 
-  /** 中止当前请求 */
   function abort() {
     if (_abortController) {
       _abortController.abort();
@@ -109,19 +111,17 @@ const DeepSeekAPI = (function () {
     _isRequesting = false;
   }
 
-  /** 检查是否请求中 */
   function isRequesting() {
     return _isRequesting;
   }
 
   /**
-   * 发送案情解析请求
+   * 发送案情解析请求（通过 Netlify Function 代理）
    * @param {string} caseText - 案情文本
    * @param {string} category - 案件大类（兜底用）
    * @returns {Promise<{sections, keywords, rawText}>}
    */
   async function analyze(caseText, category) {
-    // 前置中止旧请求
     abort();
 
     _abortController = new AbortController();
@@ -130,7 +130,6 @@ const DeepSeekAPI = (function () {
 
     const timeout = Config.getRequestTimeout();
 
-    // 超时定时器 — 超时后主动 abort 以释放网络资源
     const timeoutId = setTimeout(() => {
       _isTimeoutAbort = true;
       if (_abortController) {
@@ -145,7 +144,7 @@ const DeepSeekAPI = (function () {
         { role: 'user', content: caseText }
       ],
       temperature: 0.3,
-      max_tokens: 8192,
+      max_tokens: 512,
       stream: false
     };
 
@@ -155,15 +154,12 @@ const DeepSeekAPI = (function () {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + Config.getDeepSeekApiKey(),
-          'Accept': 'application/json',
-          'User-Agent': 'FajianAI/1.0'
+          'Accept': 'application/json'
         },
         body: JSON.stringify(body),
         signal: _abortController.signal
       });
 
-      // HTTP 错误处理
       if (!response.ok) {
         const status = response.status;
         if (status === 401) throw new Error('AUTH_ERROR');
@@ -181,10 +177,8 @@ const DeepSeekAPI = (function () {
 
       const rawText = data.choices[0].message.content || '';
 
-      // 解析结构化内容
       const { sections, keywords } = parseResponse(rawText);
 
-      // 兜底：若关键词为空，使用大类兜底关键词
       let finalKeywords = keywords;
       if (finalKeywords.length === 0 && category) {
         const fallback = Config.getFallbackKeywords(category);
@@ -194,11 +188,9 @@ const DeepSeekAPI = (function () {
       return { sections, keywords: finalKeywords, rawText };
 
     } catch (err) {
-      // AbortError 区分超时/手动中止
       if (err.name === 'AbortError') {
         throw new Error(_isTimeoutAbort ? 'REQUEST_TIMEOUT' : 'REQUEST_ABORTED');
       }
-      // 网络层错误（DNS/代理/TCP 失败）
       if (err.name === 'TypeError' || (err.message && err.message.indexOf('Failed to fetch') !== -1)) {
         throw new Error('NETWORK_ERROR');
       }
@@ -215,11 +207,11 @@ const DeepSeekAPI = (function () {
 
   function getErrorMessage(code) {
     const map = {
-      'AUTH_ERROR':      'API 密钥无效，请检查 DeepSeek 密钥配置',
+      'AUTH_ERROR':      'API 密钥无效，请检查 Netlify 环境变量 DEEPSEEK_API_KEY 配置',
       'BALANCE_ERROR':   'API 账户余额不足，请充值后重试',
       'RATE_LIMIT':      '请求频率超限，请稍后再试',
       'SERVER_ERROR':    'DeepSeek 服务器异常，请稍后重试',
-      'REQUEST_TIMEOUT': '请求超时（120 秒），请稍后重试或检查网络环境',
+      'REQUEST_TIMEOUT': '请求超时（10 秒），请稍后重试',
       'REQUEST_ABORTED': '请求已取消',
       'INVALID_RESPONSE':'AI 返回数据格式异常，请重试',
       'NETWORK_ERROR':   '网络连接失败，请检查网络后重试'
