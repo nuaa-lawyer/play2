@@ -15,18 +15,18 @@ const Config = (function () {
     || '';
   var DEEPSEEK_API_URL = env.DEEPSEEK_API_URL
     || window.DEEPSEEK_API_URL
-    || '/.netlify/functions/deepseek-proxy';
+    || 'https://api.deepseek.com/chat/completions';
   var DEEPSEEK_MODEL   = env.DEEPSEEK_MODEL
     || window.DEEPSEEK_MODEL
     || 'deepseek-v4-pro';
 
-  // 代理模式下密钥由 Netlify Functions 注入；仅直连 DeepSeek 时需要前端配置
-  if (!DEEPSEEK_API_KEY && DEEPSEEK_API_URL.indexOf('deepseek.com') !== -1) {
-    console.warn('[Config] DeepSeek API Key 未配置，请检查 env.js 或 Netlify 环境变量 DEEPSEEK_API_KEY');
+  // 直连 DeepSeek API，密钥由 env.js 或 Netlify 环境变量注入
+  if (!DEEPSEEK_API_KEY) {
+    console.warn('[Config] DeepSeek API Key 未配置，请检查 env.js');
   }
 
   // ---------- 通用 ----------
-  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || window.REQUEST_TIMEOUT || 115000;
+  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || window.REQUEST_TIMEOUT || 120000;
   const MAX_DATA_DISPLAY = env.MAX_DATA_DISPLAY || window.MAX_DATA_DISPLAY || 20;
 
   // ---------- 系统提示词（内置不可篡改） ----------

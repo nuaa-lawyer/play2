@@ -1,12 +1,13 @@
 // ============================================================
 // 法简AI - 本地JSON数据检索模块
-// 读取本地 laws.json / interpretations.json / cases.json 进行关键词匹配检索
+// 读取本地 laws.json / interpretations.json / cases.json 进行多级匹配检索
 // ============================================================
 
 const VikaAPI = (function () {
   'use strict';
 
-  const MIN_KEYWORD_LENGTH = 2;
+  const MIN_KEYWORD_LENGTH = 1;
+  var MIN_MATCH_THRESHOLD = 1;
 
   // ---------- 通用 JSON 读取 ----------
 
@@ -31,36 +32,49 @@ const VikaAPI = (function () {
       .filter(function (kw) { return kw.length >= MIN_KEYWORD_LENGTH; });
   }
 
-  // ---------- 关键词匹配（布尔判定） ----------
+  // ---------- 中文 n-gram 生成 ----------
+
+  function _generateNGrams(text, minLen, maxLen) {
+    minLen = minLen || 2;
+    maxLen = maxLen || 6;
+    var result = [];
+    var cleaned = text.replace(/[^一-龥a-zA-Z0-9]/g, '');
+    for (var len = minLen; len <= maxLen; len++) {
+      for (var i = 0; i <= cleaned.length - len; i++) {
+        result.push(cleaned.substring(i, i + len));
+      }
+    }
+    return result;
+  }
+
+  // ---------- 构建搜索文本（多字段加权） ----------
 
   function _buildSearchText(record) {
     var kwField = (record['检索关键词'] || '').toLowerCase().trim();
     if (kwField) return kwField;
-    var otherFields = [
+
+    var fields = [
       record['法条原文'], record['法条章节'], record['适用案由'],
       record['解释全称'], record['原文条款'],
       record['案情摘要'], record['裁判要点'], record['关联法条'], record['判决结果']
     ];
-    return otherFields.filter(function(f) { return f; }).join(' ').toLowerCase().trim();
+    return fields.filter(function(f) { return f; }).join(' ').toLowerCase().trim();
   }
+
+  // ---------- 关键词匹配 ----------
 
   function _matchKeywords(record, keywords) {
     var cleaned = _cleanKeywords(keywords);
-    if (cleaned.length === 0) return true;
+    if (cleaned.length === 0) return false;
     var searchText = _buildSearchText(record);
     if (!searchText) return false;
 
-    var recordTokens = searchText.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
-
     return cleaned.some(function(kw) {
-      var lowerKW = kw.toLowerCase();
-      return recordTokens.some(function(token) {
-        return token.indexOf(lowerKW) !== -1 || lowerKW.indexOf(token) !== -1;
-      }) || searchText.indexOf(lowerKW) !== -1;
+      return searchText.indexOf(kw.toLowerCase()) !== -1;
     });
   }
 
-  // ---------- 关键词匹配得分（用于排序） ----------
+  // ---------- 匹配得分（多级加权） ----------
 
   function _scoreKeywords(record, keywords) {
     var cleaned = _cleanKeywords(keywords);
@@ -73,17 +87,74 @@ const VikaAPI = (function () {
     var score = 0;
     cleaned.forEach(function(kw) {
       var lowerKW = kw.toLowerCase();
-      var matched = recordTokens.some(function(token) {
+
+      // 精确 token 匹配：高权重
+      var exactMatch = recordTokens.some(function(token) {
+        return token === lowerKW;
+      });
+      if (exactMatch) { score += 3; return; }
+
+      // token 包含匹配：中权重
+      var containsMatch = recordTokens.some(function(token) {
         return token.indexOf(lowerKW) !== -1 || lowerKW.indexOf(token) !== -1;
-      }) || searchText.indexOf(lowerKW) !== -1;
-      if (matched) score++;
+      });
+      if (containsMatch) { score += 2; return; }
+
+      // 全局子串匹配：低权重
+      if (searchText.indexOf(lowerKW) !== -1) { score += 1; return; }
     });
     return score;
   }
 
-  /**
-   * 大类兜底过滤：无关键词时按案件大类过滤记录，避免返回全量无关内容
-   */
+  // ---------- n-gram 模糊匹配（中文分词容错） ----------
+
+  function _matchNGrams(record, keywords) {
+    var cleaned = _cleanKeywords(keywords);
+    if (cleaned.length === 0) return false;
+    var searchText = _buildSearchText(record);
+    if (!searchText) return false;
+
+    // 为搜索文本生成 2-4 gram
+    var recordGrams = _generateNGrams(searchText, 2, 4);
+    var gramSet = new Set(recordGrams);
+
+    return cleaned.some(function(kw) {
+      var lowerKW = kw.toLowerCase();
+      // 直接子串匹配
+      if (searchText.indexOf(lowerKW) !== -1) return true;
+      // 关键词的 2-gram 与记录 n-gram 交集
+      if (lowerKW.length >= 2) {
+        var kwGrams = _generateNGrams(lowerKW, 2, Math.min(lowerKW.length, 4));
+        return kwGrams.some(function(g) { return gramSet.has(g); });
+      }
+      return false;
+    });
+  }
+
+  function _scoreNGrams(record, keywords) {
+    var cleaned = _cleanKeywords(keywords);
+    if (cleaned.length === 0) return 0;
+    var searchText = _buildSearchText(record);
+    if (!searchText) return 0;
+
+    var recordGrams = _generateNGrams(searchText, 2, 4);
+    var gramSet = new Set(recordGrams);
+
+    var score = 0;
+    cleaned.forEach(function(kw) {
+      var lowerKW = kw.toLowerCase();
+      if (searchText.indexOf(lowerKW) !== -1) { score += 1; return; }
+      if (lowerKW.length >= 2) {
+        var kwGrams = _generateNGrams(lowerKW, 2, Math.min(lowerKW.length, 4));
+        var matchCount = kwGrams.filter(function(g) { return gramSet.has(g); }).length;
+        if (matchCount > 0) score += matchCount / kwGrams.length;
+      }
+    });
+    return score;
+  }
+
+  // ---------- 大类兜底过滤 ----------
+
   function _matchCategory(record, category) {
     if (!category) return true;
     if (record['法条分类']) {
@@ -113,53 +184,99 @@ const VikaAPI = (function () {
   // ---------- 数据去重 ----------
 
   function _deduplicate(records, keyFn) {
-    const seen = new Set();
-    return records.filter(r => {
-      const k = keyFn(r);
-      if (!k || seen.has(k)) return false;
+    var seen = new Set();
+    var result = [];
+    for (var i = 0; i < records.length; i++) {
+      var k = keyFn(records[i]);
+      if (!k || seen.has(k)) continue;
       seen.add(k);
-      return true;
-    });
+      result.push(records[i]);
+    }
+    return result;
   }
 
-  // ---------- 关键词匹配兜底合并 ----------
-  // 当关键词匹配结果不足 MIN_MATCH_THRESHOLD 条时，合并大类兜底结果
-  var MIN_MATCH_THRESHOLD = 3;
+  // ---------- 多级检索策略 ----------
+  // 第一级：精确关键词匹配（token级别）
+  // 第二级：n-gram 模糊匹配（中文容错）
+  // 第三级：大类兜底
 
-  function _mergeWithCategoryFallback(keywordFiltered, allData, category, keyFn) {
-    if (keywordFiltered.length >= MIN_MATCH_THRESHOLD) return keywordFiltered;
-    var catFiltered = allData.filter(function(r) { return _matchCategory(r, category); });
-    var seen = new Set(keywordFiltered.map(function(r) { return keyFn(r); }));
-    catFiltered.forEach(function(r) {
-      var k = keyFn(r);
-      if (k && !seen.has(k)) { keywordFiltered.push(r); seen.add(k); }
+  function _multiLevelSearch(data, keywords, category, keyFn) {
+    var cleaned = _cleanKeywords(keywords);
+
+    // 第一级：精确匹配
+    var level1 = [];
+    var level1Keys = new Set();
+    for (var i = 0; i < data.length; i++) {
+      if (_matchKeywords(data[i], cleaned)) {
+        level1.push(data[i]);
+        level1Keys.add(keyFn(data[i]));
+      }
+    }
+
+    // 如果精确匹配足够，直接返回
+    if (level1.length >= MIN_MATCH_THRESHOLD) {
+      level1.sort(function(a, b) {
+        return _scoreKeywords(b, cleaned) - _scoreKeywords(a, cleaned);
+      });
+      return level1;
+    }
+
+    // 第二级：n-gram 模糊匹配补充
+    var merged = level1.slice();
+    for (var j = 0; j < data.length; j++) {
+      var k = keyFn(data[j]);
+      if (!k || level1Keys.has(k)) continue;
+      if (_matchNGrams(data[j], cleaned)) {
+        merged.push(data[j]);
+        level1Keys.add(k);
+      }
+    }
+
+    // 如果模糊匹配也足够，按混合得分排序返回
+    if (merged.length >= MIN_MATCH_THRESHOLD) {
+      merged.sort(function(a, b) {
+        var scoreA = _scoreKeywords(a, cleaned) * 2 + _scoreNGrams(a, cleaned);
+        var scoreB = _scoreKeywords(b, cleaned) * 2 + _scoreNGrams(b, cleaned);
+        return scoreB - scoreA;
+      });
+      return merged;
+    }
+
+    // 第三级：大类兜底
+    for (var m = 0; m < data.length; m++) {
+      var dk = keyFn(data[m]);
+      if (!dk || level1Keys.has(dk)) continue;
+      if (_matchCategory(data[m], category)) {
+        merged.push(data[m]);
+        level1Keys.add(dk);
+      }
+    }
+
+    merged.sort(function(a, b) {
+      var scoreA = _scoreKeywords(a, cleaned) * 2 + _scoreNGrams(a, cleaned);
+      var scoreB = _scoreKeywords(b, cleaned) * 2 + _scoreNGrams(b, cleaned);
+      return scoreB - scoreA;
     });
-    return keywordFiltered;
+    return merged;
   }
 
   // ---------- 三张表独立接口 ----------
 
-  /**
-   * 检索法条表
-   * 字段：法条分类、法条章节、法条序号、法条原文、适用案由、检索关键词
-   */
   async function getLawData(keywords, isVIP, signal, category) {
     try {
-      const data = await _loadJSON('laws.json', signal);
-      const maxDisplay = Config.getMaxDataDisplay();
+      var data = await _loadJSON('laws.json', signal);
+      var maxDisplay = Config.getMaxDataDisplay();
+
+      var lawKeyFn = function(r) { return r['法条序号'] || r['法条原文'] || ''; };
 
       var filtered;
       if (keywords && keywords.length > 0) {
-        filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
-        var lawKeyFn = function(r) { return r['法条序号'] || r['法条原文'] || ''; };
-        filtered = _mergeWithCategoryFallback(filtered, data, category, lawKeyFn);
-        filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
+        filtered = _multiLevelSearch(data, keywords, category, lawKeyFn);
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
       }
 
-      var keyFn = function(r) { return r['法条序号'] || r['法条原文'] || ''; };
-      const unique = _deduplicate(filtered, keyFn);
+      var unique = _deduplicate(filtered, lawKeyFn);
 
       return unique.slice(0, maxDisplay).map(function(f, index) {
         return {
@@ -179,27 +296,21 @@ const VikaAPI = (function () {
     }
   }
 
-  /**
-   * 检索司法解释表
-   * 字段：司法解释文号、解释全称、发布机关、原文条款、适用案由、检索关键词
-   */
   async function getExplainData(keywords, isVIP, signal, category) {
     try {
-      const data = await _loadJSON('interpretations.json', signal);
-      const maxDisplay = Config.getMaxDataDisplay();
+      var data = await _loadJSON('interpretations.json', signal);
+      var maxDisplay = Config.getMaxDataDisplay();
+
+      var explainKeyFn = function(r) { return r['解释全称'] || r['原文条款'] || ''; };
 
       var filtered;
       if (keywords && keywords.length > 0) {
-        filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
-        var explainKeyFn = function(r) { return r['解释全称'] || r['原文条款'] || ''; };
-        filtered = _mergeWithCategoryFallback(filtered, data, category, explainKeyFn);
-        filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
+        filtered = _multiLevelSearch(data, keywords, category, explainKeyFn);
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
       }
 
-      var keyFn = function(r) { return r['解释全称'] || r['原文条款'] || ''; };
-      const unique = _deduplicate(filtered, keyFn);
+      var unique = _deduplicate(filtered, explainKeyFn);
 
       return unique.slice(0, maxDisplay).map(function(f, index) {
         return {
@@ -219,27 +330,21 @@ const VikaAPI = (function () {
     }
   }
 
-  /**
-   * 检索指导性判例表
-   * 字段：案件类型、关联法条、案情摘要、裁判要点、判决结果、检索关键词
-   */
   async function getCaseData(keywords, isVIP, signal, category) {
     try {
-      const data = await _loadJSON('cases.json', signal);
-      const maxDisplay = Config.getMaxDataDisplay();
+      var data = await _loadJSON('cases.json', signal);
+      var maxDisplay = Config.getMaxDataDisplay();
+
+      var caseKeyFn = function(r) { return r['案情摘要'] || r['裁判要点'] || ''; };
 
       var filtered;
       if (keywords && keywords.length > 0) {
-        filtered = data.filter(function(r) { return _matchKeywords(r, keywords); });
-        var caseKeyFn = function(r) { return r['案情摘要'] || r['裁判要点'] || ''; };
-        filtered = _mergeWithCategoryFallback(filtered, data, category, caseKeyFn);
-        filtered.sort(function(a, b) { return _scoreKeywords(b, keywords) - _scoreKeywords(a, keywords); });
+        filtered = _multiLevelSearch(data, keywords, category, caseKeyFn);
       } else {
         filtered = data.filter(function(r) { return _matchCategory(r, category); });
       }
 
-      var keyFn = function(r) { return r['案情摘要'] || r['裁判要点'] || ''; };
-      const unique = _deduplicate(filtered, keyFn);
+      var unique = _deduplicate(filtered, caseKeyFn);
 
       return unique.slice(0, maxDisplay).map(function(f, index) {
         return {
@@ -261,7 +366,7 @@ const VikaAPI = (function () {
   // ---------- 错误信息映射 ----------
 
   function getErrorMessage(code) {
-    const map = {
+    var map = {
       'FILE_LOAD_ERROR': '数据文件加载失败，请稍后重试'
     };
     return map[code] || ('数据请求失败：' + code);
@@ -269,9 +374,9 @@ const VikaAPI = (function () {
 
   // ---------- 公开 API ----------
   return Object.freeze({
-    getLawData,
-    getExplainData,
-    getCaseData,
-    getErrorMessage
+    getLawData:      getLawData,
+    getExplainData:  getExplainData,
+    getCaseData:     getCaseData,
+    getErrorMessage: getErrorMessage
   });
 })();

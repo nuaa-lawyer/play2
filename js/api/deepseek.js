@@ -19,38 +19,49 @@ const DeepSeekAPI = (function () {
   function extractKeywords(text) {
     if (!text) return [];
 
-    // 尝试多种正则匹配【关键词】区块
+    // 多种正则匹配【关键词】区块，按优先级从高到低
     const patterns = [
       /【关键词】\s*[:：]?\s*([\s\S]*?)(?:$|(?=【))/,
       /关键词\s*[:：]\s*([\s\S]*?)(?:$|(?=【))/,
       /\[关键词\]\s*[:：]?\s*([\s\S]*?)(?:$|(?=\[))/,
       /KEYWORDS?\s*[:：]\s*([\s\S]*?)$/i,
-      /#+\s*关键词\s*\n([\s\S]*?)$/i
+      /#+\s*关键词\s*[:：]?\s*\n+([\s\S]*?)$/i,
+      /关键词[：:]\s*([\s\S]*?)$/m
     ];
 
     let raw = '';
     for (const pat of patterns) {
       const m = text.match(pat);
-      if (m && m[1]) {
-        raw = m[1];
+      if (m && m[1] && m[1].trim().length > 0) {
+        raw = m[1].trim();
         break;
       }
     }
 
     if (!raw) return [];
 
-    // 清洗：去除换行、多余空格、特殊符号
+    // 多级清洗：换行→逗号，中英文分号→逗号，中文逗号→英文逗号
     raw = raw.replace(/[\n\r]+/g, ',')
              .replace(/[；;]/g, ',')
+             .replace(/[，]/g, ',')
              .replace(/\s+/g, '')
-             .replace(/，/g, ',');
+             .replace(/[、]/g, ',');
 
-    // 拆分逗号分隔
+    // 拆分逗号分隔，过滤空值和异常长字符串
     const keywords = raw.split(',')
       .map(k => k.trim())
-      .filter(k => k.length > 0 && k.length < 50); // 过滤空和异常长字符串
+      .filter(k => k.length >= 1 && k.length < 50);
 
-    return [...new Set(keywords)]; // 去重
+    // 去重并保持顺序
+    const seen = new Set();
+    const result = [];
+    for (const k of keywords) {
+      if (!seen.has(k)) {
+        seen.add(k);
+        result.push(k);
+      }
+    }
+    return result;
   }
 
   // ---------- 结构化解析 ----------
@@ -208,7 +219,7 @@ const DeepSeekAPI = (function () {
       'BALANCE_ERROR':   'API 账户余额不足，请充值后重试',
       'RATE_LIMIT':      '请求频率超限，请稍后再试',
       'SERVER_ERROR':    'DeepSeek 服务器异常，请稍后重试',
-      'REQUEST_TIMEOUT': '请求超时（115 秒），请稍后重试或检查网络环境',
+      'REQUEST_TIMEOUT': '请求超时（120 秒），请稍后重试或检查网络环境',
       'REQUEST_ABORTED': '请求已取消',
       'INVALID_RESPONSE':'AI 返回数据格式异常，请重试',
       'NETWORK_ERROR':   '网络连接失败，请检查网络后重试'

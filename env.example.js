@@ -6,11 +6,11 @@
 window.ENV = {
   // DeepSeek API 配置
   DEEPSEEK_API_KEY: 'your-deepseek-api-key-here',
-  DEEPSEEK_API_URL: '/.netlify/functions/deepseek-proxy',
+  DEEPSEEK_API_URL: 'https://api.deepseek.com/chat/completions',
   DEEPSEEK_MODEL: 'deepseek-v4-pro',
 
   // 请求超时配置（毫秒）
-  REQUEST_TIMEOUT: 115000,
+  REQUEST_TIMEOUT: 120000,
 
   // 单类数据展示上限
   MAX_DATA_DISPLAY: 20

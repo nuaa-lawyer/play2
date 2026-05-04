@@ -1,8 +1,0 @@
-[functions]
-  timeout = 60
-  node_bundler = "esbuild"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
