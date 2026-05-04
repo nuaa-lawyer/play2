@@ -40,6 +40,15 @@ const DeepSeekAPI = (function () {
 
     if (!raw) return [];
 
+    // 取第一段有效内容（排除换行后的解释性文字，如"仅输出3-5个..."）
+    var firstBlock = raw.split(/[\n\r]+/).filter(function(line) {
+      var t = line.trim();
+      return t.length > 0 && !/^(仅输出|示例|核心|不含解释|案由|罪名|法条|法律关系)/.test(t);
+    })[0];
+    if (firstBlock) {
+      raw = firstBlock.trim();
+    }
+
     raw = raw.replace(/[\n\r]+/g, ',')
              .replace(/[；;]/g, ',')
              .replace(/[，]/g, ',')
@@ -47,12 +56,13 @@ const DeepSeekAPI = (function () {
              .replace(/[、]/g, ',');
 
     const keywords = raw.split(',')
-      .map(k => k.trim())
-      .filter(k => k.length >= 1 && k.length < 50);
+      .map(function(k) { return k.trim(); })
+      .filter(function(k) { return k.length >= 1 && k.length < 50; });
 
-    const seen = new Set();
-    const result = [];
-    for (const k of keywords) {
+    var seen = new Set();
+    var result = [];
+    for (var i = 0; i < keywords.length; i++) {
+      var k = keywords[i];
       if (!seen.has(k)) {
         seen.add(k);
         result.push(k);

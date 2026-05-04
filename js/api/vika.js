@@ -50,10 +50,9 @@ const VikaAPI = (function () {
   // ---------- 构建搜索文本（多字段加权） ----------
 
   function _buildSearchText(record) {
-    var kwField = (record['检索关键词'] || '').toLowerCase().trim();
-    if (kwField) return kwField;
-
+    // 组合所有字段，确保 AI 提取的动态关键词能匹配到实际内容
     var fields = [
+      record['检索关键词'],
       record['法条原文'], record['法条章节'], record['适用案由'],
       record['解释全称'], record['原文条款'],
       record['案情摘要'], record['裁判要点'], record['关联法条'], record['判决结果']
@@ -69,8 +68,16 @@ const VikaAPI = (function () {
     var searchText = _buildSearchText(record);
     if (!searchText) return false;
 
+    var tokens = searchText.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
+
     return cleaned.some(function(kw) {
-      return searchText.indexOf(kw.toLowerCase()) !== -1;
+      var lowerKW = kw.toLowerCase();
+      // 全局子串匹配
+      if (searchText.indexOf(lowerKW) !== -1) return true;
+      // 双向 token 包含匹配（关键词包含 token，或 token 包含关键词）
+      return tokens.some(function(token) {
+        return token.indexOf(lowerKW) !== -1 || lowerKW.indexOf(token) !== -1;
+      });
     });
   }
 
