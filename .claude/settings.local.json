@@ -27,7 +27,8 @@
       "Bash(node -e \"const d=require\\('./cases.json'\\); console.log\\('cases.json: ' + d.length + ' 条, 字段: ' + Object.keys\\(d[0]\\).join\\(', '\\)\\);\")",
       "Bash(node *)",
       "Bash(npx --yes smol-toml@latest --eval \"require\\('fs'\\).readFileSync\\('netlify.toml','utf8'\\)\")",
-      "Bash(xxd *)"
+      "Bash(xxd *)",
+      "Bash(git *)"
     ]
   }
 }

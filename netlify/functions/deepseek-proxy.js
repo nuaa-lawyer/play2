@@ -52,7 +52,7 @@ exports.handler = async function (event, context) {
         'Accept': 'application/json'
       },
       body: event.body,
-      timeout: 55000
+      timeout: 60000
     });
 
     const body = await response.text();

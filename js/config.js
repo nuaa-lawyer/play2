@@ -26,7 +26,7 @@ const Config = (function () {
   }
 
   // ---------- 通用 ----------
-  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || window.REQUEST_TIMEOUT || 30000;
+  const REQUEST_TIMEOUT = env.REQUEST_TIMEOUT || window.REQUEST_TIMEOUT || 115000;
   const MAX_DATA_DISPLAY = env.MAX_DATA_DISPLAY || window.MAX_DATA_DISPLAY || 20;
 
   // ---------- 系统提示词（内置不可篡改） ----------

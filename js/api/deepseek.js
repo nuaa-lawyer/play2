@@ -208,7 +208,7 @@ const DeepSeekAPI = (function () {
       'BALANCE_ERROR':   'API 账户余额不足，请充值后重试',
       'RATE_LIMIT':      '请求频率超限，请稍后再试',
       'SERVER_ERROR':    'DeepSeek 服务器异常，请稍后重试',
-      'REQUEST_TIMEOUT': '请求超时（30 秒），请稍后重试或检查网络环境',
+      'REQUEST_TIMEOUT': '请求超时（115 秒），请稍后重试或检查网络环境',
       'REQUEST_ABORTED': '请求已取消',
       'INVALID_RESPONSE':'AI 返回数据格式异常，请重试',
       'NETWORK_ERROR':   '网络连接失败，请检查网络后重试'

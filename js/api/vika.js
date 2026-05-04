@@ -33,19 +33,30 @@ const VikaAPI = (function () {
 
   // ---------- 关键词匹配（布尔判定） ----------
 
+  function _buildSearchText(record) {
+    var kwField = (record['检索关键词'] || '').toLowerCase().trim();
+    if (kwField) return kwField;
+    var otherFields = [
+      record['法条原文'], record['法条章节'], record['适用案由'],
+      record['解释全称'], record['原文条款'],
+      record['案情摘要'], record['裁判要点'], record['关联法条'], record['判决结果']
+    ];
+    return otherFields.filter(function(f) { return f; }).join(' ').toLowerCase().trim();
+  }
+
   function _matchKeywords(record, keywords) {
     var cleaned = _cleanKeywords(keywords);
     if (cleaned.length === 0) return true;
-    var kwField = (record['检索关键词'] || '').toLowerCase().trim();
-    if (!kwField) return false;
+    var searchText = _buildSearchText(record);
+    if (!searchText) return false;
 
-    var recordTokens = kwField.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
+    var recordTokens = searchText.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
 
     return cleaned.some(function(kw) {
       var lowerKW = kw.toLowerCase();
       return recordTokens.some(function(token) {
         return token.indexOf(lowerKW) !== -1 || lowerKW.indexOf(token) !== -1;
-      }) || kwField.indexOf(lowerKW) !== -1;
+      }) || searchText.indexOf(lowerKW) !== -1;
     });
   }
 
@@ -54,17 +65,17 @@ const VikaAPI = (function () {
   function _scoreKeywords(record, keywords) {
     var cleaned = _cleanKeywords(keywords);
     if (cleaned.length === 0) return 0;
-    var kwField = (record['检索关键词'] || '').toLowerCase().trim();
-    if (!kwField) return 0;
+    var searchText = _buildSearchText(record);
+    if (!searchText) return 0;
 
-    var recordTokens = kwField.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
+    var recordTokens = searchText.split(/[,，;；、\s]+/).filter(function(t) { return t.length > 0; });
 
     var score = 0;
     cleaned.forEach(function(kw) {
       var lowerKW = kw.toLowerCase();
       var matched = recordTokens.some(function(token) {
         return token.indexOf(lowerKW) !== -1 || lowerKW.indexOf(token) !== -1;
-      }) || kwField.indexOf(lowerKW) !== -1;
+      }) || searchText.indexOf(lowerKW) !== -1;
       if (matched) score++;
     });
     return score;

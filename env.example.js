@@ -10,7 +10,7 @@ window.ENV = {
   DEEPSEEK_MODEL: 'deepseek-v4-pro',
 
   // 请求超时配置（毫秒）
-  REQUEST_TIMEOUT: 30000,
+  REQUEST_TIMEOUT: 115000,
 
   // 单类数据展示上限
   MAX_DATA_DISPLAY: 20
